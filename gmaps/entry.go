@@ -6,17 +6,10 @@ import (
 	"iter"
 	"math"
 	"net/url"
-	"regexp"
 	"runtime/debug"
 	"slices"
 	"strconv"
 	"strings"
-)
-
-var (
-	removedReviewNumericRangeRe = regexp.MustCompile(`([0-9][0-9,.]*)[[:space:]]*(to|-|bis)[[:space:]]*([0-9][0-9,.]*)`)
-	removedReviewOpenEndedRe    = regexp.MustCompile(`(über|ueber|mehr als|over|more than|above)[[:space:]]+([0-9][0-9,.]*)`)
-	removedReviewSingleRe       = regexp.MustCompile(`(^|\b)(one|1|eine)[[:space:]]+(review|bewertung|rezension)`)
 )
 
 type Image struct {
@@ -75,35 +68,39 @@ type Entry struct {
 	OpenHours  map[string][]string `json:"open_hours"`
 	// PopularTImes is a map with keys the days of the week
 	// and value is a map with key the hour and value the traffic in that time
-	PopularTimes        map[string]map[int]int `json:"popular_times"`
-	WebSite             string                 `json:"web_site"`
-	Phone               string                 `json:"phone"`
-	PlusCode            string                 `json:"plus_code"`
-	ReviewCount         int                    `json:"review_count"`
-	ReviewRating        float64                `json:"review_rating"`
-	ReviewsPerRating    map[int]int            `json:"reviews_per_rating"`
-	RemovedReviewsMin   int                    `json:"removed_reviews_min"`
-	RemovedReviewsMax   int                    `json:"removed_reviews_max"`
-	Latitude            float64                `json:"latitude"`
-	Longtitude          float64                `json:"longtitude"`
-	Status              string                 `json:"status"`
-	Description         string                 `json:"description"`
-	ReviewsLink         string                 `json:"reviews_link"`
-	Thumbnail           string                 `json:"thumbnail"`
-	Timezone            string                 `json:"timezone"`
-	PriceRange          string                 `json:"price_range"`
-	DataID              string                 `json:"data_id"`
-	PlaceID             string                 `json:"place_id"`
-	Images              []Image                `json:"images"`
-	Reservations        []LinkSource           `json:"reservations"`
-	OrderOnline         []LinkSource           `json:"order_online"`
-	Menu                LinkSource             `json:"menu"`
-	Owner               Owner                  `json:"owner"`
-	CompleteAddress     Address                `json:"complete_address"`
-	About               []About                `json:"about"`
-	UserReviews         []Review               `json:"user_reviews"`
-	UserReviewsExtended []Review               `json:"user_reviews_extended"`
-	Emails              []string               `json:"emails"`
+	PopularTimes              map[string]map[int]int `json:"popular_times"`
+	WebSite                   string                 `json:"web_site"`
+	Phone                     string                 `json:"phone"`
+	PlusCode                  string                 `json:"plus_code"`
+	ReviewCount               int                    `json:"review_count"`
+	ReviewRating              float64                `json:"review_rating"`
+	ReviewsPerRating          map[int]int            `json:"reviews_per_rating"`
+	RemovedReviewsMin         int                    `json:"removed_reviews_min"`
+	RemovedReviewsMax         int                    `json:"removed_reviews_max"`
+	RemovedReviewsStatus      string                 `json:"removed_reviews_status"`
+	RemovedReviewsNotice      string                 `json:"removed_reviews_notice"`
+	ReviewCountAvailable      bool                   `json:"review_count_available"`
+	ReviewsPerRatingAvailable bool                   `json:"reviews_per_rating_available"`
+	Latitude                  float64                `json:"latitude"`
+	Longtitude                float64                `json:"longtitude"`
+	Status                    string                 `json:"status"`
+	Description               string                 `json:"description"`
+	ReviewsLink               string                 `json:"reviews_link"`
+	Thumbnail                 string                 `json:"thumbnail"`
+	Timezone                  string                 `json:"timezone"`
+	PriceRange                string                 `json:"price_range"`
+	DataID                    string                 `json:"data_id"`
+	PlaceID                   string                 `json:"place_id"`
+	Images                    []Image                `json:"images"`
+	Reservations              []LinkSource           `json:"reservations"`
+	OrderOnline               []LinkSource           `json:"order_online"`
+	Menu                      LinkSource             `json:"menu"`
+	Owner                     Owner                  `json:"owner"`
+	CompleteAddress           Address                `json:"complete_address"`
+	About                     []About                `json:"about"`
+	UserReviews               []Review               `json:"user_reviews"`
+	UserReviewsExtended       []Review               `json:"user_reviews_extended"`
+	Emails                    []string               `json:"emails"`
 }
 
 func (e *Entry) haversineDistance(lat, lon float64) float64 {
@@ -187,6 +184,10 @@ func (e *Entry) CsvHeaders() []string {
 		"reviews_5_star",
 		"removed_reviews_min",
 		"removed_reviews_max",
+		"removed_reviews_status",
+		"removed_reviews_notice",
+		"review_count_available",
+		"reviews_per_rating_available",
 		"latitude",
 		"longitude",
 		"cid",
@@ -233,6 +234,10 @@ func (e *Entry) CsvRow() []string {
 		stringify(e.ReviewsPerRating[5]),
 		stringify(e.RemovedReviewsMin),
 		stringify(e.RemovedReviewsMax),
+		e.RemovedReviewsStatus,
+		e.RemovedReviewsNotice,
+		strconv.FormatBool(e.ReviewCountAvailable),
+		strconv.FormatBool(e.ReviewsPerRatingAvailable),
 		stringify(e.Latitude),
 		stringify(e.Longtitude),
 		e.Cid,
@@ -328,7 +333,7 @@ func EntryFromJSON(raw []byte, reviewCountOnly ...bool) (entry Entry, err error)
 		return entry, fmt.Errorf("invalid json")
 	}
 
-	entry.ReviewCount = int(getNthElementAndCast[float64](darray, 4, 8))
+	entry.ReviewCount, entry.ReviewCountAvailable = reviewCountFromPayload(darray)
 
 	if onlyReviewCount {
 		return entry, nil
@@ -450,14 +455,8 @@ func EntryFromJSON(raw []byte, reviewCountOnly ...bool) (entry Entry, err error)
 		entry.About = append(entry.About, about)
 	}
 
-	entry.ReviewsPerRating = map[int]int{
-		1: int(getNthElementAndCast[float64](darray, 175, 3, 0)),
-		2: int(getNthElementAndCast[float64](darray, 175, 3, 1)),
-		3: int(getNthElementAndCast[float64](darray, 175, 3, 2)),
-		4: int(getNthElementAndCast[float64](darray, 175, 3, 3)),
-		5: int(getNthElementAndCast[float64](darray, 175, 3, 4)),
-	}
-	entry.RemovedReviewsMin, entry.RemovedReviewsMax = getRemovedReviewsRange(darray)
+	entry.ReviewsPerRating, entry.ReviewsPerRatingAvailable = reviewHistogramFromPayload(darray)
+	entry.setReviewRemovalNotice(darray)
 
 	// Parse inline reviews from the page data
 	reviewsI := getNthElementAndCast[[]any](darray, 175, 9, 0, 0)
@@ -474,92 +473,6 @@ func EntryFromJSON(raw []byte, reviewCountOnly ...bool) (entry Entry, err error)
 	}
 
 	return entry, nil
-}
-
-func getRemovedReviewsRange(darray []any) (int, int) {
-	noticesI := getNthElementAndCast[[]any](darray, 241, 0)
-	if len(noticesI) == 0 {
-		return 0, 0
-	}
-
-	for i := range noticesI {
-		noticeI := getNthElementAndCast[[]any](noticesI, i)
-		if int(getNthElementAndCast[float64](noticeI, 0)) != 3 {
-			continue
-		}
-
-		noticeBody := getNthElementAndCast[[]any](noticeI, 1)
-		for _, textIndex := range []int{0, 3} {
-			minReviews, maxReviews := parseRemovedReviewsRange(getNthElementAndCast[string](noticeBody, textIndex))
-			if minReviews != 0 || maxReviews != 0 {
-				return minReviews, maxReviews
-			}
-		}
-	}
-
-	return 0, 0
-}
-
-func parseRemovedReviewsRange(text string) (int, int) {
-	lower := strings.ToLower(text)
-	if matches := removedReviewNumericRangeRe.FindStringSubmatch(lower); len(matches) == 4 {
-		minReviews, minOK := parseReviewRangeNumber(matches[1])
-		maxReviews, maxOK := parseReviewRangeNumber(matches[3])
-		if minOK && maxOK {
-			return minReviews, maxReviews
-		}
-	}
-
-	if matches := removedReviewOpenEndedRe.FindStringSubmatch(lower); len(matches) == 3 {
-		minReviews, ok := parseReviewRangeNumber(matches[2])
-		if ok {
-			return minReviews + 1, 0
-		}
-	}
-
-	if removedReviewSingleRe.MatchString(lower) {
-		return 1, 1
-	}
-
-	fields := strings.Fields(lower)
-	for i := 0; i+2 < len(fields); i++ {
-		if fields[i+1] != "to" {
-			continue
-		}
-
-		minReviews, minOK := parseReviewRangeNumber(fields[i])
-		maxReviews, maxOK := parseReviewRangeNumber(fields[i+2])
-		if minOK && maxOK {
-			return minReviews, maxReviews
-		}
-	}
-
-	return 0, 0
-}
-
-func parseReviewRangeNumber(s string) (int, bool) {
-	s = strings.Trim(s, " ,.;:")
-	s = strings.NewReplacer(",", "", ".", "").Replace(s)
-
-	if n, err := strconv.Atoi(s); err == nil {
-		return n, true
-	}
-
-	words := map[string]int{
-		"one":   1,
-		"two":   2,
-		"three": 3,
-		"four":  4,
-		"five":  5,
-		"six":   6,
-		"seven": 7,
-		"eight": 8,
-		"nine":  9,
-		"ten":   10,
-	}
-	n, ok := words[s]
-
-	return n, ok
 }
 
 func parseReviews(reviewsI []any) []Review {

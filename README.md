@@ -307,7 +307,7 @@ docker pull gosom/google-maps-scraper
 
 ### Build from Source
 
-Requirements: Go 1.25.6+
+Requirements: Go 1.26.2+
 
 ```bash
 git clone https://github.com/gosom/google-maps-scraper.git
@@ -390,6 +390,8 @@ Matsuhisa Athens #!#MyCustomID
 ---
 
 ## Configuration
+
+The scraper on `main` exports Google Maps review-removal notices as ranges, together with parse status and review-data availability flags. See [Review-removal notices](docs/review-removals.md) for field definitions, supported formats, and the distinction between missing data and zero.
 
 ### Command Line Options
 
