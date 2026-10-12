@@ -130,7 +130,7 @@ class Store:
             self.db.execute("ROLLBACK")
             raise
 
-    def claim(self, now=None, lease_seconds=300):
+    def claim(self, now=None, lease_seconds=300, bbox=None):
         now = time.time() if now is None else now
         if lease_seconds <= 0:
             raise ValueError("Lease duration must be positive")
@@ -141,7 +141,8 @@ class Store:
             row = self.db.execute("""SELECT d.place_id,p.link FROM details d JOIN places p ON p.id=d.place_id
                 WHERE p.scope='inside' AND d.attempts<3 AND
                 ((d.state IN ('pending','retry') AND d.next_attempt<=?) OR (d.state='leased' AND d.lease_until<=?))
-                ORDER BY d.place_id LIMIT 1""", (now, now)).fetchone()
+                AND (? IS NULL OR (p.lat>=? AND p.lon>=? AND p.lat<=? AND p.lon<=?))
+                ORDER BY d.place_id LIMIT 1""", (now, now, *( (None, None, None, None, None) if bbox is None else (1, *bbox)))).fetchone()
             job = None
             if row:
                 token = uuid.uuid4().hex
@@ -183,7 +184,8 @@ def main():
     sub.add_parser("import").add_argument("checkpoints", nargs="+")
     sub.add_parser("classify").add_argument("boundary")
     sub.add_parser("stats")
-    sub.add_parser("claim")
+    claim = sub.add_parser("claim")
+    claim.add_argument("--bbox", help="minLat,minLon,maxLat,maxLon; narrows eligible jobs")
     done = sub.add_parser("finish")
     done.add_argument("token")
     done.add_argument("result")
@@ -199,7 +201,12 @@ def main():
         elif args.command == "classify":
             store.classify(args.boundary)
         elif args.command == "claim":
-            print(json.dumps(store.claim()))
+            bbox = None
+            if args.bbox:
+                bbox = tuple(map(float, args.bbox.split(',')))
+                if len(bbox) != 4 or not all(map(math.isfinite, bbox)) or not (-90 <= bbox[0] < bbox[2] <= 90 and -180 <= bbox[1] < bbox[3] <= 180):
+                    raise ValueError("Invalid claim bounding box")
+            print(json.dumps(store.claim(bbox=bbox)))
             return
         elif args.command == "finish":
             store.finish(args.token, result=json.loads(Path(args.result).read_text()))

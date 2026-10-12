@@ -60,6 +60,12 @@ class DiscoveryStoreTests(unittest.TestCase):
             jobs = list(executor.map(lambda _: claim(), range(2)))
         self.assertEqual(sum(job is not None for job in jobs), 1)
 
+    def test_claim_bbox_cannot_include_outside_or_unknown_scope(self):
+        self.assertIsNone(self.store.claim(now=0, bbox=(48, 11, 49, 12)))
+        self.store.classify(self.boundary)
+        self.assertIsNone(self.store.claim(now=0, bbox=(48.5, 11.5, 49, 12)))
+        self.assertIsNotNone(self.store.claim(now=0, bbox=(48, 11, 49, 12)))
+
     def test_expired_worker_cannot_overwrite_reclaimed_job(self):
         self.store.classify(self.boundary)
         old = self.store.claim(now=0, lease_seconds=10)

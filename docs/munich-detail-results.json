@@ -1,0 +1,175 @@
+{
+  "date": "2026-10-12",
+  "completed_details": 10,
+  "locale_page_visits": 18,
+  "records": [
+    {
+      "place_id": "cid:10083374889435199634",
+      "title": "ARKET CAFÉ",
+      "status": "not_present",
+      "min": 0,
+      "max": 0,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de",
+        "en"
+      ],
+      "count_source_language": "de",
+      "histogram_source_language": "de",
+      "conflict": false
+    },
+    {
+      "place_id": "cid:10151414915378720256",
+      "title": "BAR TATAR in der Schreiberei",
+      "status": "not_present",
+      "min": 0,
+      "max": 0,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de",
+        "en"
+      ],
+      "count_source_language": "de",
+      "histogram_source_language": "de",
+      "conflict": false
+    },
+    {
+      "place_id": "cid:1015583331628542579",
+      "title": "Andechser am Dom - die himmlische Wirtschaft",
+      "status": "not_present",
+      "min": 0,
+      "max": 0,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de",
+        "en"
+      ],
+      "count_source_language": "de",
+      "histogram_source_language": "de",
+      "conflict": false
+    },
+    {
+      "place_id": "cid:10242051591723441858",
+      "title": "Theatiner 8",
+      "status": "not_present",
+      "min": 0,
+      "max": 0,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de",
+        "en"
+      ],
+      "count_source_language": "de",
+      "histogram_source_language": "de",
+      "conflict": false
+    },
+    {
+      "place_id": "cid:10253361920177102007",
+      "title": "Ristorante Galleria",
+      "status": "not_present",
+      "min": 0,
+      "max": 0,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de",
+        "en"
+      ],
+      "count_source_language": "de",
+      "histogram_source_language": "de",
+      "conflict": false
+    },
+    {
+      "place_id": "cid:10327263059175157248",
+      "title": "Wolf’s Brotzeitladen",
+      "status": "not_present",
+      "min": 0,
+      "max": 0,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de",
+        "en"
+      ],
+      "count_source_language": "en",
+      "histogram_source_language": "en",
+      "conflict": false
+    },
+    {
+      "place_id": "cid:10330450374907118722",
+      "title": "The Rooftop Restaurant im Oberpollinger",
+      "status": "not_present",
+      "min": 0,
+      "max": 0,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de"
+      ],
+      "count_source_language": "de",
+      "histogram_source_language": "de",
+      "conflict": false
+    },
+    {
+      "place_id": "cid:10397295813843026402",
+      "title": "SEBASTIANS - Coffee & Breakfast",
+      "status": "not_present",
+      "min": 0,
+      "max": 0,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de"
+      ],
+      "count_source_language": "de",
+      "histogram_source_language": "de",
+      "conflict": false
+    },
+    {
+      "place_id": "cid:17077168390577385407",
+      "title": "Sendling’s Spezial Kebap House Marienplatz München",
+      "status": "parsed",
+      "min": 101,
+      "max": 150,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de",
+        "en"
+      ],
+      "count_source_language": "en",
+      "histogram_source_language": "en",
+      "conflict": false
+    },
+    {
+      "place_id": "cid:5208973040457020776",
+      "title": "La Casa de Kebab",
+      "status": "parsed",
+      "min": 2,
+      "max": 5,
+      "count_available": true,
+      "histogram_available": true,
+      "languages": [
+        "de",
+        "en"
+      ],
+      "count_source_language": "en",
+      "histogram_source_language": "en",
+      "conflict": false
+    }
+  ],
+  "repeat_known_done_place": {
+    "completed": 0,
+    "locale_page_visits": 0,
+    "failures": 0
+  },
+  "failures": 0,
+  "sampling": "five CID-ordered central candidates, La Casa known positive, three further central candidates, Sendling known positive; not representative",
+  "boundary": "preliminary; pilot rectangles safely within central Munich",
+  "full_review_histories_downloaded": false,
+  "coverage_complete": false
+}
