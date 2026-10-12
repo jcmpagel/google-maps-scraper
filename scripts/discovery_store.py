@@ -81,6 +81,9 @@ class Store:
                 id INTEGER PRIMARY KEY, next_visit REAL NOT NULL DEFAULT 0,
                 halted INTEGER NOT NULL DEFAULT 0, reason TEXT, not_before REAL);
             INSERT OR IGNORE INTO network_gate(id) VALUES(1);
+            CREATE TABLE IF NOT EXISTS place_filters (
+                place_id TEXT PRIMARY KEY REFERENCES places(id), review_count INTEGER,
+                permanently_closed INTEGER, observed_at TEXT, evidence_json TEXT);
         """)
 
     def import_checkpoint(self, filename):
@@ -112,6 +115,8 @@ class Store:
                         (identifier, place["title"], place["link"], *point, observed, observed))
                     self.db.execute("INSERT INTO sightings VALUES(?,?,?) ON CONFLICT(search_key,place_id) DO UPDATE SET seen_at=max(seen_at,excluded.seen_at)", (key, identifier, observed))
                     self.db.execute("INSERT OR IGNORE INTO details(place_id) VALUES(?)", (identifier,))
+                    if 'filter_evidence' in place:
+                        self.apply_filter_evidence(identifier, place['filter_evidence'], observed)
             self.db.execute("COMMIT")
         except Exception:
             self.db.execute("ROLLBACK")
@@ -135,6 +140,26 @@ class Store:
             self.db.execute("ROLLBACK")
             raise
 
+    def apply_filter_evidence(self, identifier, evidence, observed):
+        count = evidence.get('review_count')
+        if type(count) is not int or count < 0:
+            count = None
+        closed = evidence.get('permanently_closed')
+        closed = int(closed) if type(closed) is bool else None
+        if count is None and closed is None:
+            return
+        self.db.execute('''INSERT INTO place_filters VALUES(?,?,?,?,?) ON CONFLICT(place_id) DO UPDATE SET
+            review_count=coalesce(excluded.review_count,review_count),
+            permanently_closed=coalesce(excluded.permanently_closed,permanently_closed),
+            observed_at=excluded.observed_at,evidence_json=excluded.evidence_json
+            WHERE excluded.observed_at>=observed_at''', (identifier, count, closed, observed, json.dumps(evidence)))
+        row = self.db.execute('SELECT * FROM place_filters WHERE place_id=?', (identifier,)).fetchone()
+        excluded = row['permanently_closed'] == 1 or (row['review_count'] is not None and row['review_count'] < 25)
+        if excluded:
+            self.db.execute("UPDATE details SET state='skipped' WHERE place_id=? AND state IN ('pending','retry')", (identifier,))
+        else:
+            self.db.execute("UPDATE details SET state='pending',attempts=0,next_attempt=0 WHERE place_id=? AND state='skipped'", (identifier,))
+
     def claim(self, now=None, lease_seconds=300, bbox=None):
         now = time.time() if now is None else now
         if lease_seconds <= 0:
@@ -145,6 +170,7 @@ class Store:
             self.db.execute("UPDATE details SET state='failed',token=NULL,lease_until=NULL WHERE state='leased' AND lease_until<=? AND attempts>=3", (now,))
             row = self.db.execute("""SELECT d.place_id,p.link FROM details d JOIN places p ON p.id=d.place_id
                 WHERE p.scope='inside' AND d.attempts<3 AND
+                NOT EXISTS(SELECT 1 FROM place_filters f WHERE f.place_id=p.id AND (f.permanently_closed=1 OR f.review_count<25)) AND
                 ((d.state IN ('pending','retry') AND d.next_attempt<=?) OR (d.state='leased' AND d.lease_until<=?))
                 AND (? IS NULL OR (p.lat>=? AND p.lon>=? AND p.lat<=? AND p.lon<=?))
                 ORDER BY d.place_id LIMIT 1""", (now, now, *( (None, None, None, None, None) if bbox is None else (1, *bbox)))).fetchone()
@@ -165,11 +191,12 @@ class Store:
             raise ValueError("Supply exactly one result or error")
         if result is not None and not isinstance(result, dict):
             raise ValueError("Detail result must be a JSON object")
+        excluded = result is not None and result.get('detail_exclusion_reason') in ('under_25_reviews', 'permanently_closed')
         cursor = self.db.execute("""UPDATE details SET
-            state=CASE WHEN ? IS NULL THEN 'done' WHEN attempts>=3 THEN 'failed' ELSE 'retry' END,
+            state=CASE WHEN ? IS NULL THEN CASE WHEN ? THEN 'skipped' ELSE 'done' END WHEN attempts>=3 THEN 'failed' ELSE 'retry' END,
             result_json=?,fetched_at=?,last_error=?,next_attempt=?+min(3600,60*(1 << attempts)),token=NULL,lease_until=NULL
             WHERE token=? AND state='leased' AND lease_until>?""",
-            (error, json.dumps(result) if result is not None else None, now if result is not None else None, error, now, token, now))
+            (error, excluded, json.dumps(result) if result is not None else None, now if result is not None else None, error, now, token, now))
         if cursor.rowcount != 1:
             raise ValueError("Lease expired, reclaimed, or already completed")
 
@@ -179,6 +206,8 @@ class Store:
                     "places": self.db.execute("SELECT count(*) FROM places").fetchone()[0],
                     "searches": self.db.execute("SELECT count(*) FROM searches").fetchone()[0],
                     "sightings": self.db.execute("SELECT count(*) FROM sightings").fetchone()[0],
+                    "exclusions": {'under_25_reviews': self.db.execute('SELECT count(*) FROM place_filters WHERE review_count<25').fetchone()[0],
+                                   'permanently_closed': self.db.execute('SELECT count(*) FROM place_filters WHERE permanently_closed=1').fetchone()[0]},
                     "eligible_details": dict(self.db.execute("SELECT state,count(*) FROM details JOIN places ON place_id=id WHERE scope='inside' GROUP BY state").fetchall())}
 
     def reserve_visit(self, now=None, interval=2):

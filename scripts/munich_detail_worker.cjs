@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
+const { detailExclusion } = require('./place_filters.cjs');
 
 function entryIdentity(entry) {
   const fid = /^0x[0-9a-f]+:0x([0-9a-f]+)$/i.exec(entry.data_id || '');
@@ -100,6 +101,7 @@ async function main() {
       const observations = [];
       try {
         for (const language of ['de', 'en']) {
+          if (language === 'en' && detailExclusion(observations[0].entry)) break;
           if (language === 'en' && !needsEnglish(observations[0].entry, fallback)) break;
           await pace(pacingFile);
           await network.reserve();
@@ -150,10 +152,11 @@ async function main() {
           } finally { await page.close(); }
         }
         const result = mergeObservations(observations, job.place_id);
+        result.detail_exclusion_reason = detailExclusion(result);
         const filename = path.join(output, `${job.token}-result.json`);
         fs.writeFileSync(filename, JSON.stringify(result, null, 2));
         store('finish', job.token, filename);
-        report.completed.push({ place_id: job.place_id, title: result.title, languages: observations.map(o => o.language), status: result.removed_reviews_status, min: result.removed_reviews_min, max: result.removed_reviews_max, countAvailable: result.review_count_available, histogramAvailable: result.reviews_per_rating_available, conflict: result.detail_removal_conflict });
+        report.completed.push({ place_id: job.place_id, title: result.title, languages: observations.map(o => o.language), status: result.removed_reviews_status, min: result.removed_reviews_min, max: result.removed_reviews_max, countAvailable: result.review_count_available, histogramAvailable: result.reviews_per_rating_available, conflict: result.detail_removal_conflict, exclusionReason: result.detail_exclusion_reason });
         console.log(JSON.stringify(report.completed.at(-1)));
         save();
       } catch (error) {

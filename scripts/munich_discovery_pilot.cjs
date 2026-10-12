@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
+const { searchEvidence } = require('./place_filters.cjs');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_DRIVER_PATH, 'package'));
 const output = process.argv[2];
 if (!output) throw new Error('Usage: node scripts/munich_discovery_pilot.cjs OUTPUT_DIRECTORY');
@@ -172,8 +173,18 @@ async function summarize() {
         for (let scroll = 0; standalone === null && scroll <= scrollBudget; scroll++) {
           const body = await page.locator('body').innerText();
           if (blocked || /unusual traffic|ungewöhnlichen Datenverkehr|captcha/i.test(body)) throw new Error('Rate limit, access block or challenge: stopping pilot');
-          const rows = await feed.locator('a[href*="/maps/place/"]').evaluateAll(nodes => nodes.map(n => ({ title: n.getAttribute('aria-label') || n.textContent, link: n.href })));
-          for (const row of rows) { const id = identity(row.link); collected.set(id, { ...row, id }); }
+          const rows = await feed.locator('a[href*="/maps/place/"]').evaluateAll(nodes => nodes.map(n => {
+            const card = n.closest('.Nv2PK, [role="article"]');
+            return { title: n.getAttribute('aria-label') || n.textContent, link: n.href,
+              countText: card?.querySelector('.UY7F9')?.textContent || null,
+              ariaText: card ? [...card.querySelectorAll('[aria-label]')].map(el => el.getAttribute('aria-label')).join(' ') : '',
+              cardText: card?.textContent || '' };
+          }));
+          for (const row of rows) {
+            const id = identity(row.link);
+            const evidence = searchEvidence(row.countText, row.ariaText, row.cardText);
+            collected.set(id, { title: row.title, link: row.link, id, filter_evidence: evidence });
+          }
           record.endOfList = /Ende der Liste|end of the list/i.test(await feed.innerText());
           if (record.endOfList) break;
           if (scroll === scrollBudget) { record.exhaustedScrollBudget = true; break; }

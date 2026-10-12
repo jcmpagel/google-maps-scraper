@@ -155,6 +155,27 @@ class DiscoveryStoreTests(unittest.TestCase):
         self.assertEqual(result['not_before'], 5000)
         self.assertEqual(self.store.halt_network('HTTP 429', 'inf', now=101)['not_before'], 5000)
 
+    def test_search_filters_skip_only_confirmed_low_counts_and_permanent_closure(self):
+        self.store.classify(self.boundary)
+        identifier = 'cid:1110'
+        self.store.apply_filter_evidence(identifier, {'review_count': 24}, '2026-10-12T10:00:00Z')
+        self.assertIsNone(self.store.claim(now=0))
+        self.assertEqual(self.store.stats()['details'], {'skipped': 1})
+        self.store.apply_filter_evidence(identifier, {'review_count': 25}, '2026-10-12T11:00:00Z')
+        self.store.apply_filter_evidence(identifier, {'review_count': 1}, '2026-10-12T09:00:00Z')
+        self.assertEqual(self.store.stats()['details'], {'pending': 1})
+        self.store.apply_filter_evidence(identifier, {'permanently_closed': True}, '2026-10-12T12:00:00Z')
+        self.assertIsNone(self.store.claim(now=0))
+
+    def test_unknown_filter_and_cached_detail_exclusion(self):
+        self.store.classify(self.boundary)
+        self.store.apply_filter_evidence('cid:1110', {'review_count': None}, '2026-10-12T10:00:00Z')
+        job = self.store.claim(now=0)
+        self.assertIsNotNone(job)
+        self.store.finish(job['token'], result={'detail_exclusion_reason': 'under_25_reviews'}, now=1)
+        self.assertEqual(self.store.stats()['details'], {'skipped': 1})
+        self.assertIsNone(self.store.claim(now=2))
+
 
 if __name__ == "__main__":
     unittest.main()
