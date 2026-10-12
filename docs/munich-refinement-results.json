@@ -1,0 +1,256 @@
+{
+  "date": "2026-10-12",
+  "iteration": 3,
+  "summary": {
+    "results": [
+      {
+        "key": "zentrum-child--1--1/Restaurant/17",
+        "count": 120,
+        "newInRunOrder": 120,
+        "duplicateInRunOrder": 0,
+        "endOfList": true,
+        "seconds": 69.656,
+        "coordinatesAvailable": 120,
+        "maxDistanceKm": 0.6363417129655666,
+        "medianDistanceKm": 0.32319293561135964
+      },
+      {
+        "key": "zentrum-child--1-1/Restaurant/17",
+        "count": 120,
+        "newInRunOrder": 57,
+        "duplicateInRunOrder": 63,
+        "endOfList": true,
+        "seconds": 69.726,
+        "coordinatesAvailable": 120,
+        "maxDistanceKm": 0.4897031011719237,
+        "medianDistanceKm": 0.25944399764781595
+      },
+      {
+        "key": "zentrum-child-1--1/Restaurant/17",
+        "count": 120,
+        "newInRunOrder": 68,
+        "duplicateInRunOrder": 52,
+        "endOfList": true,
+        "seconds": 69.736,
+        "coordinatesAvailable": 120,
+        "maxDistanceKm": 0.7538777415639827,
+        "medianDistanceKm": 0.3085818725613858
+      },
+      {
+        "key": "zentrum-child-1-1/Restaurant/17",
+        "count": 120,
+        "newInRunOrder": 31,
+        "duplicateInRunOrder": 89,
+        "endOfList": true,
+        "seconds": 69.52,
+        "coordinatesAvailable": 120,
+        "maxDistanceKm": 0.7107155577368183,
+        "medianDistanceKm": 0.3182623023504923
+      },
+      {
+        "key": "zentrum/Döner/16",
+        "count": 120,
+        "newInRunOrder": 87,
+        "duplicateInRunOrder": 33,
+        "endOfList": true,
+        "seconds": 69.662,
+        "coordinatesAvailable": 120,
+        "maxDistanceKm": 3.5354034211795526,
+        "medianDistanceKm": 0.8320723122575711
+      },
+      {
+        "key": "zentrum/Imbiss/16",
+        "count": 120,
+        "newInRunOrder": 62,
+        "duplicateInRunOrder": 58,
+        "endOfList": true,
+        "seconds": 69.716,
+        "coordinatesAvailable": 120,
+        "maxDistanceKm": 2.3722320560923635,
+        "medianDistanceKm": 0.4297345401548033
+      }
+    ],
+    "unique": 425,
+    "appearances": 720,
+    "comparisons": [
+      {
+        "a": "zentrum-child--1--1/Restaurant/17",
+        "b": "zentrum-child--1-1/Restaurant/17",
+        "shared": 63,
+        "onlyA": 57,
+        "onlyB": 57
+      },
+      {
+        "a": "zentrum-child--1--1/Restaurant/17",
+        "b": "zentrum-child-1--1/Restaurant/17",
+        "shared": 48,
+        "onlyA": 72,
+        "onlyB": 72
+      },
+      {
+        "a": "zentrum-child--1--1/Restaurant/17",
+        "b": "zentrum-child-1-1/Restaurant/17",
+        "shared": 35,
+        "onlyA": 85,
+        "onlyB": 85
+      },
+      {
+        "a": "zentrum-child--1--1/Restaurant/17",
+        "b": "zentrum/Döner/16",
+        "shared": 18,
+        "onlyA": 102,
+        "onlyB": 102
+      },
+      {
+        "a": "zentrum-child--1--1/Restaurant/17",
+        "b": "zentrum/Imbiss/16",
+        "shared": 24,
+        "onlyA": 96,
+        "onlyB": 96
+      },
+      {
+        "a": "zentrum-child--1-1/Restaurant/17",
+        "b": "zentrum-child-1--1/Restaurant/17",
+        "shared": 34,
+        "onlyA": 86,
+        "onlyB": 86
+      },
+      {
+        "a": "zentrum-child--1-1/Restaurant/17",
+        "b": "zentrum-child-1-1/Restaurant/17",
+        "shared": 48,
+        "onlyA": 72,
+        "onlyB": 72
+      },
+      {
+        "a": "zentrum-child--1-1/Restaurant/17",
+        "b": "zentrum/Döner/16",
+        "shared": 18,
+        "onlyA": 102,
+        "onlyB": 102
+      },
+      {
+        "a": "zentrum-child--1-1/Restaurant/17",
+        "b": "zentrum/Imbiss/16",
+        "shared": 20,
+        "onlyA": 100,
+        "onlyB": 100
+      },
+      {
+        "a": "zentrum-child-1--1/Restaurant/17",
+        "b": "zentrum-child-1-1/Restaurant/17",
+        "shared": 75,
+        "onlyA": 45,
+        "onlyB": 45
+      },
+      {
+        "a": "zentrum-child-1--1/Restaurant/17",
+        "b": "zentrum/Döner/16",
+        "shared": 12,
+        "onlyA": 108,
+        "onlyB": 108
+      },
+      {
+        "a": "zentrum-child-1--1/Restaurant/17",
+        "b": "zentrum/Imbiss/16",
+        "shared": 17,
+        "onlyA": 103,
+        "onlyB": 103
+      },
+      {
+        "a": "zentrum-child-1-1/Restaurant/17",
+        "b": "zentrum/Döner/16",
+        "shared": 9,
+        "onlyA": 111,
+        "onlyB": 111
+      },
+      {
+        "a": "zentrum-child-1-1/Restaurant/17",
+        "b": "zentrum/Imbiss/16",
+        "shared": 13,
+        "onlyA": 107,
+        "onlyB": 107
+      },
+      {
+        "a": "zentrum/Döner/16",
+        "b": "zentrum/Imbiss/16",
+        "shared": 20,
+        "onlyA": 100,
+        "onlyB": 100
+      }
+    ],
+    "detailRequests": 0
+  },
+  "novelty": [
+    {
+      "search": "zentrum-child--1--1/Restaurant/17",
+      "results": 120,
+      "new_across_all_preceding_searches": 58
+    },
+    {
+      "search": "zentrum-child--1-1/Restaurant/17",
+      "results": 120,
+      "new_across_all_preceding_searches": 27
+    },
+    {
+      "search": "zentrum-child-1--1/Restaurant/17",
+      "results": 120,
+      "new_across_all_preceding_searches": 51
+    },
+    {
+      "search": "zentrum-child-1-1/Restaurant/17",
+      "results": 120,
+      "new_across_all_preceding_searches": 25
+    },
+    {
+      "search": "zentrum/Döner/16",
+      "results": 120,
+      "new_across_all_preceding_searches": 83
+    },
+    {
+      "search": "zentrum/Imbiss/16",
+      "results": 120,
+      "new_across_all_preceding_searches": 61
+    }
+  ],
+  "parent_vs_four_children": {
+    "parent": 120,
+    "children_union": 276,
+    "additional_to_parent": 167,
+    "parent_missing_in_children": 11
+  },
+  "same_region_comparison": {
+    "centre_lat": 48.1372,
+    "centre_lon": 11.5756,
+    "half_lat_span": 0.00449,
+    "half_lon_span": 0.00672,
+    "parent": 90,
+    "children_union": 223,
+    "additional": 133,
+    "parent_missing": 0
+  },
+  "store": {
+    "scope": {
+      "inside": 676,
+      "outside": 30
+    },
+    "details": {
+      "pending": 706
+    },
+    "places": 706,
+    "searches": 18,
+    "sightings": 1320,
+    "eligible_details": {
+      "pending": 676
+    }
+  },
+  "failed_search_attempts": 1,
+  "boundary": {
+    "status": "preliminary archived third-party geometry; not an authoritative current city boundary",
+    "source": "https://github.com/isellsoap/deutschlandGeoJSON/blob/main/4_kreise/3_mittel.geo.json",
+    "feature_name": "Munich Städte",
+    "sha256": "ce49dc040818b2ac5eb17e7f758d98fbaf1acb4e6d85b3ac9d9119eba8a98abc"
+  },
+  "coverage_complete": false,
+  "intentional_detail_requests": 0
+}

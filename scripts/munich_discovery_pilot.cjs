@@ -1,11 +1,23 @@
 // Bounded discovery experiment. No place-detail pages or review requests.
 const fs = require('node:fs');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_DRIVER_PATH, 'package'));
 const output = process.argv[2];
 if (!output) throw new Error('Usage: node scripts/munich_discovery_pilot.cjs OUTPUT_DIRECTORY');
 const deep = process.argv.includes('--deep');
-const maxScrolls = deep ? 20 : 4;
+const refine = process.argv.includes('--refine');
+if (deep && refine) throw new Error('Choose either --deep or --refine');
+const maxScrolls = deep || refine ? 20 : 4;
+function option(name) {
+  const index = process.argv.indexOf(name);
+  if (index < 0) return null;
+  if (!process.argv[index + 1] || process.argv[index + 1].startsWith('--')) throw new Error(`Missing value for ${name}`);
+  return process.argv[index + 1];
+}
+const storePath = option('--store');
+const boundaryPath = option('--boundary');
+if (boundaryPath && !storePath) throw new Error('--boundary requires --store');
 fs.mkdirSync(output, { recursive: true });
 const sites = [
   { name: 'zentrum', lat: 48.1372, lon: 11.5756 },
@@ -19,6 +31,13 @@ plan.push({ name: 'zentrum-nord', lat: 48.1417, lon: 11.5756, keyword: 'Restaura
 if (deep) plan.splice(0, plan.length,
   { ...sites[0], keyword: 'Restaurant', zoom: 16 },
   { ...sites[2], keyword: 'Café', zoom: 16 });
+if (refine) plan.splice(0, plan.length,
+  ...[[-1, -1], [-1, 1], [1, -1], [1, 1]].map(([north, east]) => ({
+    name: `zentrum-child-${north}-${east}`, lat: sites[0].lat + north * 0.00225,
+    lon: sites[0].lon + east * 0.00336, keyword: 'Restaurant', zoom: 17,
+  })),
+  { ...sites[0], keyword: 'Döner', zoom: 16 },
+  { ...sites[0], keyword: 'Imbiss', zoom: 16 });
 const statePath = path.join(output, 'discovery.json');
 const state = fs.existsSync(statePath) ? JSON.parse(fs.readFileSync(statePath, 'utf8')) : { version: 1, maxScrolls, plan, searches: [] };
 if (JSON.stringify(state.plan) !== JSON.stringify(plan)) throw new Error('Output directory belongs to a different plan');
@@ -26,6 +45,12 @@ if ((state.maxScrolls ?? 4) !== maxScrolls) throw new Error('Output directory be
 function save() {
   fs.writeFileSync(statePath + '.tmp', JSON.stringify(state, null, 2));
   fs.renameSync(statePath + '.tmp', statePath);
+}
+function syncStore() {
+  if (!storePath) return;
+  const helper = path.join(__dirname, 'discovery_store.py');
+  execFileSync('python3', [helper, storePath, 'import', statePath], { stdio: 'pipe' });
+  if (boundaryPath) execFileSync('python3', [helper, storePath, 'classify', boundaryPath], { stdio: 'pipe' });
 }
 function identity(link) {
   const url = new URL(link);
@@ -68,6 +93,8 @@ async function summarize() {
   console.log(JSON.stringify(summary));
 }
 (async () => {
+  save();
+  syncStore();
   if (process.argv.includes('--summarize')) { await summarize(); return; }
   const browser = await chromium.launch({ headless: true });
   try {
@@ -130,6 +157,7 @@ async function summarize() {
         save(); throw error;
       } finally { await page.close(); }
       save();
+      syncStore();
       if (plan.indexOf(task) < plan.length - 1) await new Promise(resolve => setTimeout(resolve, 15000));
     }
   } finally { await browser.close(); await summarize(); }

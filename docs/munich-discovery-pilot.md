@@ -66,8 +66,35 @@ Output contains `discovery.json` (checkpoints and source links), `places.json` (
 
 ## Next production iteration
 
-Start with zoom 16 as a candidate for dense central areas, retaining multiple category queries. Validate longer scrolling before selecting a cell spacing. Use the municipal polygon for result inclusion. Build a durable transactional store with stable search keys, place-ID aliases, search provenance, detail freshness, atomic job claims, retry state, and a global pacing budget. Failed detail jobs must remain retryable instead of being permanently marked seen.
+The follow-up `--refine` experiment adds four central Restaurant searches at zoom 17, plus Döner and Imbiss at the original centre at zoom 16. It uses the twenty-scroll budget and must have its own output directory. Persistent inventory/detail scheduling is now available through the [discovery store](discovery-store.md); the Go CLI and automatic detail worker remain separate follow-up work.
+
+Add `--store gmaps-output/munich.sqlite` to import checkpoints after every completed search, and `--boundary PATH.geojson` to classify discoveries using a supplied polygon. Previously completed checkpoints are reconciled on startup, including when imports were interrupted. `--summarize` can also reconcile saved captures into the store without visiting Maps.
+
+Start with zoom 16 as a candidate for dense central areas, retaining multiple category queries. Validate longer scrolling before selecting a cell spacing. Use the municipal polygon for result inclusion. Extend the durable store with detail freshness, search-job reservations, and a global pacing budget. Failed detail jobs must remain retryable instead of being permanently marked seen.
 
 Add Döner/Kebab, Imbiss, bar and other desired categories in a subsequent category experiment. The two tested terms do not cover all hospitality businesses. Evaluate adaptive subdivision using both truncated searches and incremental discoveries; duplicate percentage alone must not determine coverage. Review-removal notices and their language-dependent availability still need their separate detail collection stage.
 
 The pilot does not establish a Germany-wide completion time or an acceptable sustained request rate. Base those estimates on longer runs including detail collection, failures, and backoff.
+
+## Third iteration: subdivision, categories, and durable inventory
+
+Four Restaurant searches at zoom 17 were centred approximately 250 metres north/south and east/west of the original central point. Each returned 120 IDs and reached its end marker; their union contained 276 IDs. Compared with the 120-ID parent search, 167 IDs were additional and eleven parent IDs were absent. Keep the parent discovery inventory when subdividing, since smaller searches do not necessarily include every previously ranked result.
+
+To distinguish refinement from merely searching outside the original area, both result sets were clipped to the same approximately 1-km square around the original centre (latitude ±0.00449°, longitude ±0.00672°). The parent had 90 IDs inside that square; the children had 223, including every one of those 90. Thus **133 additional IDs were discovered within the same test area**. This is a controlled test rectangle, not the Munich municipal boundary. All four child lists also ended at 120, so their completeness remains unproven.
+
+| Follow-up search | Results | New to the accumulated inventory |
+|---|---:|---:|
+| Southwest child / Restaurant / zoom 17 | 120 | 58 |
+| Southeast child / Restaurant / zoom 17 | 120 | 27 |
+| Northwest child / Restaurant / zoom 17 | 120 | 51 |
+| Northeast child / Restaurant / zoom 17 | 120 | 25 |
+| Centre / Döner / zoom 16 | 120 | 83 |
+| Centre / Imbiss / zoom 16 | 120 | 61 |
+
+The accumulated inventory now contains **706 distinct Maps IDs from 1,320 appearances in 18 successful searches**. Keywords are discovery signals; the actual business category still needs verification from detail data. The initial Imbiss attempt suffered an aborted Maps transport request and was excluded, then succeeded on one retry. No intentional detail or review requests were made.
+
+The SQLite helper was exercised on these real captures and wired into the pilot's `--store` option. Reconciliation and restart preserved exactly 706 places, 18 search identities, and 1,320 unique search/place sightings. There is one pending detail job per canonical place identity. Nine tests cover restart/idempotence, concurrent reservations, stale worker rejection, backoff, exhausted crash recovery, coordinate ordering, transaction rollback, and polygon holes/edges.
+
+An exploratory geographic classification used the archived deutschlandGeoJSON medium-resolution `Munich Städte` feature, derived from GIS-DATA. It classified 676 candidates inside and 30 outside, with no missing coordinates. This geometry is **preliminary**, not a verified current authoritative municipal boundary. It is not redistributed here. Replace it with a current appropriately sourced city polygon before production inclusion decisions, especially near the border. Source and boundary hash are recorded in [munich-refinement-results.json](munich-refinement-results.json).
+
+The immediate next step is to connect a paced detail worker to the durable queue and test removal-notice collection on a small eligible subset. Add current boundary provenance, refresh scheduling, and durable search-job reservations before launching the full-city campaign. The CLI's existing in-memory URL deduper remains unchanged; the new store currently serves the experiment and its future detail worker.
