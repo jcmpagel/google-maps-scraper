@@ -109,9 +109,18 @@ func GenerateCells(bbox BoundingBox, cellSizeKm float64) []Cell {
 
 	var cells []Cell
 
-	// Start at the centre of the first cell (half a step from the edge).
-	for lat := bbox.MinLat + latStep/2; lat < bbox.MaxLat; lat += latStep {
-		for lon := bbox.MinLon + lonStep/2; lon < bbox.MaxLon; lon += lonStep {
+	// Include partial edge cells, even when the box is smaller than one cell.
+	// Their centres belong inside the clipped cell rather than outside the box.
+	latCount := int(math.Ceil((bbox.MaxLat - bbox.MinLat) / latStep))
+	lonCount := int(math.Ceil((bbox.MaxLon - bbox.MinLon) / lonStep))
+
+	for row := 0; row < latCount; row++ {
+		latStart := bbox.MinLat + float64(row)*latStep
+		lat := (latStart + math.Min(latStart+latStep, bbox.MaxLat)) / 2
+
+		for column := 0; column < lonCount; column++ {
+			lonStart := bbox.MinLon + float64(column)*lonStep
+			lon := (lonStart + math.Min(lonStart+lonStep, bbox.MaxLon)) / 2
 			cells = append(cells, Cell{Lat: lat, Lon: lon})
 		}
 	}

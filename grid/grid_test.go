@@ -8,6 +8,33 @@ import (
 	"github.com/gosom/google-maps-scraper/grid"
 )
 
+func TestPartialEdgeCells(t *testing.T) {
+	t.Parallel()
+
+	const kmPerDegree = 111.32
+
+	for _, widthKm := range []float64{0.2, 1.2, 2.1} {
+		bbox := grid.BoundingBox{
+			MinLat: 48.13, MinLon: 11.57,
+			MaxLat: 48.13 + widthKm/kmPerDegree,
+		}
+		midLat := (bbox.MinLat + bbox.MaxLat) / 2
+		bbox.MaxLon = bbox.MinLon + widthKm/(kmPerDegree*math.Cos(midLat*math.Pi/180))
+		cells := grid.GenerateCells(bbox, 1)
+		expected := int(math.Ceil(widthKm))
+
+		if len(cells) != expected*expected || len(cells) != grid.EstimateCellCount(bbox, 1) {
+			t.Fatalf("width %f: expected %d cells, got %d", widthKm, expected*expected, len(cells))
+		}
+
+		for _, cell := range cells {
+			if cell.Lat <= bbox.MinLat || cell.Lat >= bbox.MaxLat || cell.Lon <= bbox.MinLon || cell.Lon >= bbox.MaxLon {
+				t.Fatalf("cell centre outside Munich bounding box: %+v", cell)
+			}
+		}
+	}
+}
+
 func TestParseBoundingBox(t *testing.T) {
 	t.Parallel()
 
