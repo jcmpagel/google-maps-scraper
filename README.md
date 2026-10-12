@@ -393,6 +393,8 @@ Matsuhisa Athens #!#MyCustomID
 
 The scraper on `main` exports Google Maps review-removal notices as ranges, together with parse status and review-data availability flags. See [Review-removal notices](docs/review-removals.md) for field definitions, supported formats, and the distinction between missing data and zero.
 
+For geographic collection, see the [Munich discovery pilot](docs/munich-discovery-pilot.md) for measured zoom/keyword overlaps, a resumable experiment, and the remaining requirements for collecting a whole city.
+
 ### Command Line Options
 
 ```

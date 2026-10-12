@@ -1,0 +1,502 @@
+{
+  "captured_date": "2026-10-12",
+  "language": "de",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "workers": 1,
+  "pause_between_searches_seconds": 15,
+  "pause_between_scrolls_seconds": 4,
+  "first_iteration": {
+    "max_scrolls": 4,
+    "results": [
+      {
+        "key": "zentrum/Restaurant/15",
+        "count": 36,
+        "newInRunOrder": 36,
+        "duplicateInRunOrder": 0,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.692,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 1.6772582972752077,
+        "medianDistanceKm": 0.31243802863906306
+      },
+      {
+        "key": "zentrum/Café/15",
+        "count": 36,
+        "newInRunOrder": 35,
+        "duplicateInRunOrder": 1,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.315,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 1.8744332965995778,
+        "medianDistanceKm": 0.6851472601621647
+      },
+      {
+        "key": "sendling/Restaurant/15",
+        "count": 36,
+        "newInRunOrder": 36,
+        "duplicateInRunOrder": 0,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.809,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 2.0228125178886764,
+        "medianDistanceKm": 0.9160492743846218
+      },
+      {
+        "key": "sendling/Café/15",
+        "count": 36,
+        "newInRunOrder": 35,
+        "duplicateInRunOrder": 1,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.126,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 2.1590525354226213,
+        "medianDistanceKm": 1.0087073865298812
+      },
+      {
+        "key": "aubing/Restaurant/15",
+        "count": 36,
+        "newInRunOrder": 36,
+        "duplicateInRunOrder": 0,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.573,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 3.7225136452905794,
+        "medianDistanceKm": 1.5425245969187305
+      },
+      {
+        "key": "aubing/Café/15",
+        "count": 36,
+        "newInRunOrder": 30,
+        "duplicateInRunOrder": 6,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.041,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 8.218601193062586,
+        "medianDistanceKm": 3.5346083065775447
+      },
+      {
+        "key": "zentrum/Restaurant/16",
+        "count": 36,
+        "newInRunOrder": 9,
+        "duplicateInRunOrder": 27,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.365,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 0.8777100277881584,
+        "medianDistanceKm": 0.30034299619538923
+      },
+      {
+        "key": "zentrum/Café/16",
+        "count": 36,
+        "newInRunOrder": 14,
+        "duplicateInRunOrder": 22,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.312,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 0.8732592838430888,
+        "medianDistanceKm": 0.4007198689414739
+      },
+      {
+        "key": "zentrum-ost/Restaurant/16",
+        "count": 36,
+        "newInRunOrder": 2,
+        "duplicateInRunOrder": 34,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.186,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 1.2899210594447006,
+        "medianDistanceKm": 0.45879951484256465
+      },
+      {
+        "key": "zentrum-nord/Restaurant/16",
+        "count": 36,
+        "newInRunOrder": 8,
+        "duplicateInRunOrder": 28,
+        "exhaustedScrollBudget": true,
+        "endOfList": false,
+        "seconds": 17.305,
+        "coordinatesAvailable": 36,
+        "maxDistanceKm": 1.2687376898952685,
+        "medianDistanceKm": 0.5967353599015721
+      }
+    ],
+    "unique": 241,
+    "appearances": 360,
+    "comparisons": [
+      {
+        "a": "zentrum/Restaurant/15",
+        "b": "zentrum/Café/15",
+        "shared": 1,
+        "onlyA": 35,
+        "onlyB": 35
+      },
+      {
+        "a": "zentrum/Restaurant/15",
+        "b": "sendling/Restaurant/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "zentrum/Restaurant/15",
+        "b": "sendling/Café/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "zentrum/Restaurant/15",
+        "b": "aubing/Restaurant/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "zentrum/Restaurant/15",
+        "b": "aubing/Café/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "zentrum/Restaurant/15",
+        "b": "zentrum/Restaurant/16",
+        "shared": 27,
+        "onlyA": 9,
+        "onlyB": 9
+      },
+      {
+        "a": "zentrum/Restaurant/15",
+        "b": "zentrum/Café/16",
+        "shared": 1,
+        "onlyA": 35,
+        "onlyB": 35
+      },
+      {
+        "a": "zentrum/Restaurant/15",
+        "b": "zentrum-ost/Restaurant/16",
+        "shared": 28,
+        "onlyA": 8,
+        "onlyB": 8
+      },
+      {
+        "a": "zentrum/Restaurant/15",
+        "b": "zentrum-nord/Restaurant/16",
+        "shared": 21,
+        "onlyA": 15,
+        "onlyB": 15
+      },
+      {
+        "a": "zentrum/Café/15",
+        "b": "sendling/Restaurant/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "zentrum/Café/15",
+        "b": "sendling/Café/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "zentrum/Café/15",
+        "b": "aubing/Restaurant/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "zentrum/Café/15",
+        "b": "aubing/Café/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "zentrum/Café/15",
+        "b": "zentrum/Restaurant/16",
+        "shared": 1,
+        "onlyA": 35,
+        "onlyB": 35
+      },
+      {
+        "a": "zentrum/Café/15",
+        "b": "zentrum/Café/16",
+        "shared": 21,
+        "onlyA": 15,
+        "onlyB": 15
+      },
+      {
+        "a": "zentrum/Café/15",
+        "b": "zentrum-ost/Restaurant/16",
+        "shared": 2,
+        "onlyA": 34,
+        "onlyB": 34
+      },
+      {
+        "a": "zentrum/Café/15",
+        "b": "zentrum-nord/Restaurant/16",
+        "shared": 2,
+        "onlyA": 34,
+        "onlyB": 34
+      },
+      {
+        "a": "sendling/Restaurant/15",
+        "b": "sendling/Café/15",
+        "shared": 1,
+        "onlyA": 35,
+        "onlyB": 35
+      },
+      {
+        "a": "sendling/Restaurant/15",
+        "b": "aubing/Restaurant/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Restaurant/15",
+        "b": "aubing/Café/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Restaurant/15",
+        "b": "zentrum/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Restaurant/15",
+        "b": "zentrum/Café/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Restaurant/15",
+        "b": "zentrum-ost/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Restaurant/15",
+        "b": "zentrum-nord/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Café/15",
+        "b": "aubing/Restaurant/15",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Café/15",
+        "b": "aubing/Café/15",
+        "shared": 1,
+        "onlyA": 35,
+        "onlyB": 35
+      },
+      {
+        "a": "sendling/Café/15",
+        "b": "zentrum/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Café/15",
+        "b": "zentrum/Café/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Café/15",
+        "b": "zentrum-ost/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "sendling/Café/15",
+        "b": "zentrum-nord/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "aubing/Restaurant/15",
+        "b": "aubing/Café/15",
+        "shared": 5,
+        "onlyA": 31,
+        "onlyB": 31
+      },
+      {
+        "a": "aubing/Restaurant/15",
+        "b": "zentrum/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "aubing/Restaurant/15",
+        "b": "zentrum/Café/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "aubing/Restaurant/15",
+        "b": "zentrum-ost/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "aubing/Restaurant/15",
+        "b": "zentrum-nord/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "aubing/Café/15",
+        "b": "zentrum/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "aubing/Café/15",
+        "b": "zentrum/Café/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "aubing/Café/15",
+        "b": "zentrum-ost/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "aubing/Café/15",
+        "b": "zentrum-nord/Restaurant/16",
+        "shared": 0,
+        "onlyA": 36,
+        "onlyB": 36
+      },
+      {
+        "a": "zentrum/Restaurant/16",
+        "b": "zentrum/Café/16",
+        "shared": 2,
+        "onlyA": 34,
+        "onlyB": 34
+      },
+      {
+        "a": "zentrum/Restaurant/16",
+        "b": "zentrum-ost/Restaurant/16",
+        "shared": 31,
+        "onlyA": 5,
+        "onlyB": 5
+      },
+      {
+        "a": "zentrum/Restaurant/16",
+        "b": "zentrum-nord/Restaurant/16",
+        "shared": 24,
+        "onlyA": 12,
+        "onlyB": 12
+      },
+      {
+        "a": "zentrum/Café/16",
+        "b": "zentrum-ost/Restaurant/16",
+        "shared": 2,
+        "onlyA": 34,
+        "onlyB": 34
+      },
+      {
+        "a": "zentrum/Café/16",
+        "b": "zentrum-nord/Restaurant/16",
+        "shared": 3,
+        "onlyA": 33,
+        "onlyB": 33
+      },
+      {
+        "a": "zentrum-ost/Restaurant/16",
+        "b": "zentrum-nord/Restaurant/16",
+        "shared": 22,
+        "onlyA": 14,
+        "onlyB": 14
+      }
+    ],
+    "detailRequests": 0
+  },
+  "second_iteration": {
+    "max_scrolls": 20,
+    "results": [
+      {
+        "key": "zentrum/Restaurant/16",
+        "count": 120,
+        "newInRunOrder": 120,
+        "duplicateInRunOrder": 0,
+        "endOfList": true,
+        "seconds": 69.864,
+        "coordinatesAvailable": 120,
+        "maxDistanceKm": 0.8777100277881584,
+        "medianDistanceKm": 0.34509342050414465
+      },
+      {
+        "key": "aubing/Café/16",
+        "count": 120,
+        "newInRunOrder": 120,
+        "duplicateInRunOrder": 0,
+        "endOfList": true,
+        "seconds": 69.544,
+        "coordinatesAvailable": 120,
+        "maxDistanceKm": 9.662707929294227,
+        "medianDistanceKm": 4.848917939038731
+      }
+    ],
+    "unique": 240,
+    "appearances": 240,
+    "comparisons": [
+      {
+        "a": "zentrum/Restaurant/16",
+        "b": "aubing/Café/16",
+        "shared": 0,
+        "onlyA": 120,
+        "onlyB": 120
+      }
+    ],
+    "detailRequests": 0
+  },
+  "combined": {
+    "appearances": 600,
+    "distinct_maps_ids": 401,
+    "new_ids_second_iteration": 160,
+    "intentional_detail_requests": 0
+  },
+  "coverage_complete": false
+}
