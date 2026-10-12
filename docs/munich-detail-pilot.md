@@ -1,6 +1,6 @@
 # Bounded Munich detail worker
 
-The pilot now connects the persistent discovery queue to live place-detail capture and the normal Go parser. It uses one browser worker, at most twenty places per invocation (five by default), and fifteen seconds between locale page visits. It does not scroll or download full review histories. This is a small validation worker, not a full-city launch.
+The bounded worker now connects the persistent discovery queue to live place-detail capture and the normal Go parser. It uses one browser worker, at most twenty places per invocation (five by default), and fifteen seconds between locale page visits. It does not scroll or download full review histories. The city coordinator can run several bounded workers on numbered lanes; the standalone default remains one worker. See [parallel campaign controls](munich-city-campaign.md#parallel-iteration--12-october-2026).
 
 ```bash
 source /workspace/.setup/google-maps-scraper/activate.sh
@@ -37,3 +37,5 @@ Ten distinct places were fetched successfully in eighteen locale page visits, wi
 Three more central places tested the cheaper fallback policy: Wolf’s Brotzeitladen required English to complete missing metrics, while The Rooftop Restaurant and SEBASTIANS needed only German. Thus this small comparison used four instead of six locale visits. It does not establish a representative fallback rate for Munich.
 
 A second invocation restricted to the already-completed La Casa job made zero locale visits and completed zero jobs; its first result and per-run history were preserved. Aggregate evidence is in [munich-detail-results.json](munich-detail-results.json). Sendling’s Spezial Kebap House Marienplatz also returned a matching German/English range of **101–150**, with English filling missing metrics. All ten stored records have available review counts and five-star histograms after merging; in these captures each histogram sums to the corresponding review count. Eight remain `not_present`; that does not mean zero deletions.
+
+Parallel campaign lanes share the SQLite page-start budget and a persisted global access-block signal. Each lane retains its own lock and pacing file. `--lane` is a coordinator setting; do not launch overlapping standalone workers beside an active campaign.

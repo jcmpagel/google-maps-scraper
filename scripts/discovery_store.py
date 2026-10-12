@@ -7,6 +7,7 @@ import re
 import sqlite3
 import time
 import uuid
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import unquote, urlparse, parse_qs
 
@@ -76,6 +77,10 @@ class Store:
                 place_id TEXT PRIMARY KEY REFERENCES places(id), state TEXT NOT NULL DEFAULT 'pending',
                 attempts INTEGER NOT NULL DEFAULT 0, token TEXT, lease_until REAL,
                 next_attempt REAL NOT NULL DEFAULT 0, result_json TEXT, fetched_at REAL, last_error TEXT);
+            CREATE TABLE IF NOT EXISTS network_gate (
+                id INTEGER PRIMARY KEY, next_visit REAL NOT NULL DEFAULT 0,
+                halted INTEGER NOT NULL DEFAULT 0, reason TEXT, not_before REAL);
+            INSERT OR IGNORE INTO network_gate(id) VALUES(1);
         """)
 
     def import_checkpoint(self, filename):
@@ -176,6 +181,54 @@ class Store:
                     "sightings": self.db.execute("SELECT count(*) FROM sightings").fetchone()[0],
                     "eligible_details": dict(self.db.execute("SELECT state,count(*) FROM details JOIN places ON place_id=id WHERE scope='inside' GROUP BY state").fetchall())}
 
+    def reserve_visit(self, now=None, interval=2):
+        now = time.time() if now is None else now
+        if not math.isfinite(interval) or interval <= 0:
+            raise ValueError('Visit interval must be positive and finite')
+        self.db.execute('BEGIN IMMEDIATE')
+        try:
+            gate = self.db.execute('SELECT * FROM network_gate WHERE id=1').fetchone()
+            if gate['halted']:
+                raise ValueError('Global access block: ' + gate['reason'])
+            reserved = max(now, gate['next_visit'])
+            self.db.execute('UPDATE network_gate SET next_visit=? WHERE id=1', (reserved + interval,))
+            self.db.execute('COMMIT')
+            return {'wait_seconds': reserved - now, 'reserved_at': reserved}
+        except Exception:
+            self.db.execute('ROLLBACK')
+            raise
+
+    def halt_network(self, reason, retry_after=None, now=None):
+        now = time.time() if now is None else now
+        deadline = now + 900  # Cooldown floor; resumption still requires inspecting the cause.
+        if retry_after:
+            try:
+                delay = float(retry_after)
+                if math.isfinite(delay) and delay >= 0 and math.isfinite(now + delay):
+                    deadline = max(deadline, now + delay)
+            except ValueError:
+                try:
+                    deadline = max(deadline, parsedate_to_datetime(retry_after).timestamp())
+                except (TypeError, ValueError, OverflowError):
+                    pass
+        self.db.execute('BEGIN IMMEDIATE')
+        try:
+            gate = self.db.execute('SELECT * FROM network_gate WHERE id=1').fetchone()
+            deadline = max(deadline, gate['not_before'] or 0)
+            self.db.execute('UPDATE network_gate SET halted=1,reason=?,not_before=? WHERE id=1', (reason, deadline))
+            # Serialize filesystem signalling under the same transaction for all worker lanes.
+            database = self.db.execute('PRAGMA database_list').fetchone()[2]
+            target = Path(database + '.maps-halt.json')
+            temporary = target.with_suffix('.json.tmp')
+            signal = {'reason': reason, 'not_before': deadline, 'retry_after': retry_after, 'review_required': True}
+            temporary.write_text(json.dumps(signal))
+            temporary.replace(target)
+            self.db.execute('COMMIT')
+            return signal
+        except Exception:
+            self.db.execute('ROLLBACK')
+            raise
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -184,6 +237,10 @@ def main():
     sub.add_parser("import").add_argument("checkpoints", nargs="+")
     sub.add_parser("classify").add_argument("boundary")
     sub.add_parser("stats")
+    sub.add_parser('reserve-visit')
+    halt = sub.add_parser('halt-network')
+    halt.add_argument('reason')
+    halt.add_argument('--retry-after')
     claim = sub.add_parser("claim")
     claim.add_argument("--bbox", help="minLat,minLon,maxLat,maxLon; narrows eligible jobs")
     done = sub.add_parser("finish")
@@ -212,6 +269,12 @@ def main():
             store.finish(args.token, result=json.loads(Path(args.result).read_text()))
         elif args.command == "fail":
             store.finish(args.token, error=args.error)
+        elif args.command == 'reserve-visit':
+            print(json.dumps(store.reserve_visit()))
+            return
+        elif args.command == 'halt-network':
+            print(json.dumps(store.halt_network(args.reason, args.retry_after)))
+            return
         print(json.dumps(store.stats()))
     finally:
         store.db.close()

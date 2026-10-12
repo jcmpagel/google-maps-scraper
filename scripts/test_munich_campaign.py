@@ -1,4 +1,5 @@
 import json
+import concurrent.futures
 import tempfile
 import unittest
 from pathlib import Path
@@ -38,6 +39,18 @@ class CampaignTests(unittest.TestCase):
             self.assertEqual(second.db.execute('SELECT status FROM campaign_jobs WHERE id=?', (row['id'],)).fetchone()[0], 'done')
         finally:
             second.db.close()
+
+    def test_parallel_search_claims_are_unique(self):
+        def claim(_):
+            campaign = Campaign(self.root / 'inventory.sqlite', self.root / 'output', self.boundary)
+            try:
+                return campaign.claim_search()['id']
+            finally:
+                campaign.db.close()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            identifiers = list(pool.map(claim, range(16)))
+        self.assertEqual(len(set(identifiers)), 16)
+        self.assertEqual(self.campaign.db.execute("SELECT count(*) FROM campaign_jobs WHERE status='running'").fetchone()[0], 16)
 
     def test_saturated_parent_adds_four_children_only_once(self):
         row = self.campaign.db.execute('SELECT id,task_json FROM campaign_jobs LIMIT 1').fetchone()

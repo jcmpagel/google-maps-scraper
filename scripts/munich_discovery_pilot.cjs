@@ -18,6 +18,8 @@ function option(name) {
 const storePath = option('--store');
 const boundaryPath = option('--boundary');
 const externalPlan = option('--plan');
+const lane = option('--lane');
+if (lane && !/^[0-9]{1,2}$/.test(lane)) throw new Error('Invalid worker lane');
 if (boundaryPath && !storePath) throw new Error('--boundary requires --store');
 fs.mkdirSync(output, { recursive: true });
 const sites = [
@@ -106,26 +108,30 @@ async function summarize() {
   save();
   syncStore();
   if (process.argv.includes('--summarize')) { await summarize(); return; }
-  const lock = storePath ? storePath + '.maps-worker.lock' : null;
+  const suffix = lane ? `.maps-lane-${lane}` : '.maps';
+  const lock = storePath ? storePath + suffix + '-worker.lock' : null;
   const descriptor = lock ? fs.openSync(lock, 'wx') : null;
   if (descriptor !== null) fs.writeSync(descriptor, JSON.stringify({ pid: process.pid }));
   let browser;
+  const network = storePath ? require('./munich_detail_worker.cjs').networkControl(storePath) : null;
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ proxy: { server: process.env.HTTPS_PROXY }, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', viewport: { width: 1920, height: 1080 } });
     for (const task of plan) {
       const key = `${task.name}/${task.keyword}/${task.zoom}`;
       if (state.searches.some(s => s.key === key && s.status === 'completed')) continue;
-      if (storePath) await require('./munich_detail_worker.cjs').pace(storePath + '.maps-pacing.json');
+      if (storePath) await require('./munich_detail_worker.cjs').pace(storePath + suffix + '-pacing.json');
+      if (network) await network.reserve();
       const record = { ...task, key, startedAt: new Date().toISOString(), status: 'running', transportErrors: [], deniedResponses: [], skippedOptionalRequests: 0, places: [] };
       state.searches.push(record);
       save();
       const page = await context.newPage();
       let blocked = false;
       await page.route('**/*', async route => {
+        if (network && fs.existsSync(network.haltFile)) { blocked = true; return route.abort(); }
         if (['image', 'media', 'font'].includes(route.request().resourceType())) return route.abort();
         const requestURL = new URL(route.request().url());
-        if (requestURL.hostname === 'ogads-pa.clients6.google.com' ||
+        if ((requestURL.hostname === 'apis.google.com' && requestURL.pathname === '/js/client.js') || requestURL.hostname === 'ogads-pa.clients6.google.com' ||
             (requestURL.hostname === 'play.google.com' && requestURL.pathname === '/log')) {
           record.skippedOptionalRequests++;
           return route.abort();
@@ -135,6 +141,7 @@ async function summarize() {
           if ([403, 429].includes(response.status())) {
             record.deniedResponses.push({ url: route.request().url().split('?')[0], status: response.status() });
             blocked = true;
+            if (network) network.halt(`HTTP ${response.status()} ${requestURL.origin + requestURL.pathname}`, response.headers()['retry-after']);
           }
           await route.fulfill({ response });
         } catch (error) {
@@ -180,6 +187,8 @@ async function summarize() {
         record.seconds = (Date.now() - Date.parse(record.startedAt)) / 1000;
         console.log(JSON.stringify({ key, count: record.places.length, endOfList: record.endOfList }));
       } catch (error) {
+        if (network && (blocked || /challenge|rate limit|access block/i.test(error.message)) && !fs.existsSync(network.haltFile)) network.halt(error.message);
+        if (network && fs.existsSync(network.haltFile)) error.message = 'Global access block: ' + error.message;
         record.status = 'failed'; record.error = error.message;
         save(); throw error;
       } finally { await page.close(); }

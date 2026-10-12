@@ -24,6 +24,26 @@ async function pace(pacingFile, now = Date.now, wait = milliseconds => new Promi
   fs.renameSync(pacingFile + '.tmp', pacingFile);
 }
 
+function networkControl(database) {
+  const helper = path.join(__dirname, 'discovery_store.py');
+  const haltFile = database + '.maps-halt.json';
+  const check = () => { if (fs.existsSync(haltFile)) throw new Error('Global access block: ' + fs.readFileSync(haltFile, 'utf8')); };
+  return {
+    haltFile, check,
+    halt(reason, retryAfter) {
+      const args = [helper, database, 'halt-network', reason];
+      if (retryAfter) args.push('--retry-after', retryAfter);
+      execFileSync('python3', args);
+    },
+    async reserve() {
+      check();
+      const gate = JSON.parse(execFileSync('python3', [helper, database, 'reserve-visit'], { encoding: 'utf8' }));
+      if (gate.wait_seconds) await new Promise(resolve => setTimeout(resolve, gate.wait_seconds * 1000));
+      check();
+    },
+  };
+}
+
 function mergeObservations(observations, expected) {
   if (!observations.length || observations.some(o => entryIdentity(o.entry) !== expected)) throw new Error('Detail identity does not match reserved place');
   const merged = { ...observations[0].entry };
@@ -47,12 +67,15 @@ async function main() {
   if (!Number.isInteger(limit) || limit < 1 || limit > 20) throw new Error('Pilot limit must be 1–20');
   const bbox = option('--bbox', '48.13,11.56,48.145,11.59');
   const fallback = option('--fallback', 'missing-data');
+  const lane = option('--lane', null);
+  if (lane && !/^[0-9]{1,2}$/.test(lane)) throw new Error('Invalid worker lane');
   if (!['missing-data', 'notice-or-metrics'].includes(fallback)) throw new Error('Unknown fallback policy');
   const helper = path.join(__dirname, 'discovery_store.py');
   const store = (...parameters) => JSON.parse(execFileSync('python3', [helper, database, ...parameters], { encoding: 'utf8' }));
   fs.mkdirSync(output, { recursive: true });
   // Exclusive worker lock: all detail workers sharing this DB use one pacing lane.
-  const lock = database + '.maps-worker.lock';
+  const suffix = lane ? `.maps-lane-${lane}` : '.maps';
+  const lock = database + suffix + '-worker.lock';
   const descriptor = fs.openSync(lock, 'wx');
   fs.writeSync(descriptor, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
   let browser;
@@ -64,7 +87,8 @@ async function main() {
     fs.renameSync(path.join(output, `run-${report.run_id}.json.tmp`), path.join(output, `run-${report.run_id}.json`));
     fs.writeFileSync(latest + '.tmp', contents); fs.renameSync(latest + '.tmp', latest);
   };
-  const pacingFile = database + '.maps-pacing.json';
+  const pacingFile = database + suffix + '-pacing.json';
+  const network = networkControl(database);
   try {
     if (fs.existsSync(latest)) fs.copyFileSync(latest, path.join(output, `previous-${report.run_id}.json`));
     const { chromium } = require(path.join(process.env.PLAYWRIGHT_DRIVER_PATH, 'package'));
@@ -78,17 +102,22 @@ async function main() {
         for (const language of ['de', 'en']) {
           if (language === 'en' && !needsEnglish(observations[0].entry, fallback)) break;
           await pace(pacingFile);
+          await network.reserve();
           const page = await context.newPage();
           const errors = [];
           let blocked = false;
           try {
             await page.route('**/*', async route => {
+              if (fs.existsSync(network.haltFile)) { blocked = true; return route.abort(); }
               if (['image', 'media', 'font'].includes(route.request().resourceType())) return route.abort();
               const url = new URL(route.request().url());
-              if (url.hostname === 'ogads-pa.clients6.google.com' || (url.hostname === 'play.google.com' && url.pathname === '/log')) return route.abort();
+              if ((url.hostname === 'apis.google.com' && url.pathname === '/js/client.js') || url.hostname === 'ogads-pa.clients6.google.com' || (url.hostname === 'play.google.com' && url.pathname === '/log')) return route.abort();
               try {
                 const response = await route.fetch({ timeout: 30000 });
-                if ([403, 429].includes(response.status())) blocked = true;
+                if ([403, 429].includes(response.status())) {
+                  blocked = true;
+                  network.halt(`HTTP ${response.status()} ${url.origin + url.pathname}`, response.headers()['retry-after']);
+                }
                 await route.fulfill({ response });
               } catch (error) { errors.push(error.message.slice(0, 250)); await route.abort(); }
             });
@@ -100,7 +129,10 @@ async function main() {
             await page.waitForFunction(() => !!window.APP_INITIALIZATION_STATE, { timeout: 15000 });
             await page.waitForTimeout(3000);
             const body = await page.locator('body').innerText();
-            if (blocked || /unusual traffic|ungewöhnlichen Datenverkehr|captcha/i.test(body)) throw new Error('Access block or challenge; stopping');
+            if (blocked || /unusual traffic|ungewöhnlichen Datenverkehr|captcha/i.test(body)) {
+              if (!fs.existsSync(network.haltFile)) network.halt('Access block or challenge');
+              throw new Error('Access block or challenge; stopping');
+            }
             const raw = await page.evaluate(() => {
               const state = window.APP_INITIALIZATION_STATE?.[3];
               if (!state) return null;
@@ -140,5 +172,5 @@ async function main() {
   }
 }
 
-module.exports = { entryIdentity, mergeObservations, needsEnglish, pace };
+module.exports = { entryIdentity, mergeObservations, needsEnglish, pace, networkControl };
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });

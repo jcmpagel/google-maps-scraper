@@ -130,6 +130,31 @@ class DiscoveryStoreTests(unittest.TestCase):
         self.assertIsNone(self.store.claim(now=903))
         self.assertEqual(self.store.stats()["details"], {"failed": 1})
 
+    def test_shared_visit_slots_are_spaced_across_connections(self):
+        def reserve(_):
+            store = Store(self.database)
+            try:
+                return store.reserve_visit(now=100)['reserved_at']
+            finally:
+                store.db.close()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+            slots = sorted(pool.map(reserve, range(8)))
+        self.assertEqual(slots, list(range(100, 116, 2)))
+
+    def test_retry_after_halts_all_workers_and_never_shortens_cooldown(self):
+        result = self.store.halt_network('HTTP 429', '3600', now=100)
+        self.assertEqual(result['not_before'], 3700)
+        self.assertTrue(Path(str(self.database) + '.maps-halt.json').exists())
+        self.assertEqual(self.store.halt_network('HTTP 429', '1', now=101)['not_before'], 3700)
+        with self.assertRaisesRegex(ValueError, 'Global access block'):
+            self.store.reserve_visit(now=5000)
+
+    def test_http_date_retry_after_and_invalid_delay(self):
+        from email.utils import formatdate
+        result = self.store.halt_network('HTTP 429', formatdate(5000, usegmt=True), now=100)
+        self.assertEqual(result['not_before'], 5000)
+        self.assertEqual(self.store.halt_network('HTTP 429', 'inf', now=101)['not_before'], 5000)
+
 
 if __name__ == "__main__":
     unittest.main()
