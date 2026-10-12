@@ -121,7 +121,7 @@ class Store:
             raise ValueError("Supply one Polygon/MultiPolygon geometry or Feature")
         self.db.execute("BEGIN IMMEDIATE")
         try:
-            for row in self.db.execute("SELECT id,lon,lat FROM places").fetchall():
+            for row in self.db.execute("SELECT id,lon,lat FROM places WHERE boundary IS NOT ? OR scope='unknown'", (boundary,)).fetchall():
                 point = (row["lon"], row["lat"]) if row["lon"] is not None and row["lat"] is not None else None
                 scope = "unknown" if point is None else "inside" if contains(geometry, point) else "outside"
                 self.db.execute("UPDATE places SET scope=?,boundary=? WHERE id=?", (scope, boundary, row["id"]))

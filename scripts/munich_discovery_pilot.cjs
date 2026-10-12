@@ -17,6 +17,7 @@ function option(name) {
 }
 const storePath = option('--store');
 const boundaryPath = option('--boundary');
+const externalPlan = option('--plan');
 if (boundaryPath && !storePath) throw new Error('--boundary requires --store');
 fs.mkdirSync(output, { recursive: true });
 const sites = [
@@ -38,10 +39,19 @@ if (refine) plan.splice(0, plan.length,
   })),
   { ...sites[0], keyword: 'Döner', zoom: 16 },
   { ...sites[0], keyword: 'Imbiss', zoom: 16 });
+if (externalPlan) {
+  if (deep || refine) throw new Error('--plan cannot be combined with pilot presets');
+  const supplied = JSON.parse(fs.readFileSync(externalPlan));
+  if (!Array.isArray(supplied.plan) || !supplied.plan.length) throw new Error('External plan must contain tasks');
+  for (const task of supplied.plan) if (!Number.isFinite(task.lat) || !Number.isFinite(task.lon) || Math.abs(task.lat) > 90 || Math.abs(task.lon) > 180 || !Number.isInteger(task.zoom) || task.zoom < 1 || task.zoom > 21 || typeof task.keyword !== 'string' || !task.keyword || typeof task.name !== 'string') throw new Error('Invalid external search task');
+  plan.splice(0, plan.length, ...supplied.plan);
+}
 const statePath = path.join(output, 'discovery.json');
-const state = fs.existsSync(statePath) ? JSON.parse(fs.readFileSync(statePath, 'utf8')) : { version: 1, maxScrolls, plan, searches: [] };
+const scrollBudget = externalPlan ? JSON.parse(fs.readFileSync(externalPlan)).maxScrolls : maxScrolls;
+if (!Number.isInteger(scrollBudget) || scrollBudget < 1 || scrollBudget > 40) throw new Error('Invalid scroll budget');
+const state = fs.existsSync(statePath) ? JSON.parse(fs.readFileSync(statePath, 'utf8')) : { version: 1, maxScrolls: scrollBudget, plan, searches: [] };
 if (JSON.stringify(state.plan) !== JSON.stringify(plan)) throw new Error('Output directory belongs to a different plan');
-if ((state.maxScrolls ?? 4) !== maxScrolls) throw new Error('Output directory belongs to a different scroll budget');
+if ((state.maxScrolls ?? 4) !== scrollBudget) throw new Error('Output directory belongs to a different scroll budget');
 function save() {
   fs.writeFileSync(statePath + '.tmp', JSON.stringify(state, null, 2));
   fs.renameSync(statePath + '.tmp', statePath);
@@ -96,12 +106,17 @@ async function summarize() {
   save();
   syncStore();
   if (process.argv.includes('--summarize')) { await summarize(); return; }
-  const browser = await chromium.launch({ headless: true });
+  const lock = storePath ? storePath + '.maps-worker.lock' : null;
+  const descriptor = lock ? fs.openSync(lock, 'wx') : null;
+  if (descriptor !== null) fs.writeSync(descriptor, JSON.stringify({ pid: process.pid }));
+  let browser;
   try {
+    browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ proxy: { server: process.env.HTTPS_PROXY }, userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36', viewport: { width: 1920, height: 1080 } });
     for (const task of plan) {
       const key = `${task.name}/${task.keyword}/${task.zoom}`;
       if (state.searches.some(s => s.key === key && s.status === 'completed')) continue;
+      if (storePath) await require('./munich_detail_worker.cjs').pace(storePath + '.maps-pacing.json');
       const record = { ...task, key, startedAt: new Date().toISOString(), status: 'running', transportErrors: [], deniedResponses: [], skippedOptionalRequests: 0, places: [] };
       state.searches.push(record);
       save();
@@ -133,16 +148,28 @@ async function summarize() {
         const reject = page.getByRole('button', { name: /Reject all|Alle ablehnen/i });
         if (await reject.count()) await reject.first().click();
         const feed = page.locator('div[role=feed]');
-        await feed.waitFor({ timeout: 25000 });
+        let standalone = null;
+        try { await feed.waitFor({ timeout: 25000 }); }
+        catch (error) {
+          const body = await page.locator('body').innerText();
+          if (blocked || /unusual traffic|ungewöhnlichen Datenverkehr|captcha/i.test(body)) throw new Error('Access block or challenge; stopping');
+          if (/Keine Ergebnisse|No results|keine Übereinstimmungen/i.test(body)) standalone = [];
+          else if (page.url().includes('/maps/place/')) {
+            const link = page.url();
+            standalone = [{ title: await page.locator('h1').first().innerText(), link, id: identity(link) }];
+          } else throw error;
+          record.endOfList = true;
+        }
         const collected = new Map();
-        for (let scroll = 0; scroll <= maxScrolls; scroll++) {
+        if (standalone) for (const row of standalone) collected.set(row.id, row);
+        for (let scroll = 0; standalone === null && scroll <= scrollBudget; scroll++) {
           const body = await page.locator('body').innerText();
           if (blocked || /unusual traffic|ungewöhnlichen Datenverkehr|captcha/i.test(body)) throw new Error('Rate limit, access block or challenge: stopping pilot');
           const rows = await feed.locator('a[href*="/maps/place/"]').evaluateAll(nodes => nodes.map(n => ({ title: n.getAttribute('aria-label') || n.textContent, link: n.href })));
           for (const row of rows) { const id = identity(row.link); collected.set(id, { ...row, id }); }
           record.endOfList = /Ende der Liste|end of the list/i.test(await feed.innerText());
           if (record.endOfList) break;
-          if (scroll === maxScrolls) { record.exhaustedScrollBudget = true; break; }
+          if (scroll === scrollBudget) { record.exhaustedScrollBudget = true; break; }
           await feed.evaluate(el => el.scrollTo(0, el.scrollHeight));
           await page.waitForTimeout(4000);
         }
@@ -160,5 +187,8 @@ async function summarize() {
       syncStore();
       if (plan.indexOf(task) < plan.length - 1) await new Promise(resolve => setTimeout(resolve, 15000));
     }
-  } finally { await browser.close(); await summarize(); }
+  } finally {
+    try { if (browser) await browser.close(); await summarize(); }
+    finally { if (descriptor !== null) { fs.closeSync(descriptor); fs.unlinkSync(lock); } }
+  }
 })().catch(error => { console.error(error.message); process.exitCode = 1; });

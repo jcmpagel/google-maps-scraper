@@ -395,6 +395,8 @@ The scraper on `main` exports Google Maps review-removal notices as ranges, toge
 
 For geographic collection, see the [Munich discovery pilot](docs/munich-discovery-pilot.md) for measured zoom/keyword overlaps, a resumable experiment, and the remaining requirements for collecting a whole city.
 
+The [Munich city campaign](docs/munich-city-campaign.md) coordinates a persisted geographic search plan, adaptive subdivision, and the detail queue, with live status and restart instructions.
+
 ### Command Line Options
 
 ```

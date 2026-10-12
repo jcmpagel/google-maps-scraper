@@ -52,7 +52,7 @@ async function main() {
   const store = (...parameters) => JSON.parse(execFileSync('python3', [helper, database, ...parameters], { encoding: 'utf8' }));
   fs.mkdirSync(output, { recursive: true });
   // Exclusive worker lock: all detail workers sharing this DB use one pacing lane.
-  const lock = database + '.detail-worker.lock';
+  const lock = database + '.maps-worker.lock';
   const descriptor = fs.openSync(lock, 'wx');
   fs.writeSync(descriptor, JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }));
   let browser;
@@ -64,7 +64,7 @@ async function main() {
     fs.renameSync(path.join(output, `run-${report.run_id}.json.tmp`), path.join(output, `run-${report.run_id}.json`));
     fs.writeFileSync(latest + '.tmp', contents); fs.renameSync(latest + '.tmp', latest);
   };
-  const pacingFile = database + '.detail-pacing.json';
+  const pacingFile = database + '.maps-pacing.json';
   try {
     if (fs.existsSync(latest)) fs.copyFileSync(latest, path.join(output, `previous-${report.run_id}.json`));
     const { chromium } = require(path.join(process.env.PLAYWRIGHT_DRIVER_PATH, 'package'));
