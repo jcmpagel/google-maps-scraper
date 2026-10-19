@@ -1,0 +1,19 @@
+{
+  "repository": "https://github.com/EqualStreetNames/equalstreetnames-berlin",
+  "commit": "b4d82ca4af6acd62187792097cfdb7c571fcfc45",
+  "url": "https://raw.githubusercontent.com/EqualStreetNames/equalstreetnames-berlin/b4d82ca4af6acd62187792097cfdb7c571fcfc45/data/ways.geojson",
+  "sha256": "0cf5f2e88464c3d3c4ac6248dc423b18d87384e52197e715aed30d1de5105e4e",
+  "bytes": 83216487,
+  "data_updated_at": "2026-10-02T17:59:00+00:00",
+  "source": "OpenStreetMap via EqualStreetNames Berlin",
+  "license": "ODbL-1.0",
+  "license_url": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "selected_bounds": [
+    13.354932056138352,
+    52.42226415300036,
+    13.47287094386165,
+    52.49412904699964
+  ],
+  "selected_features": 9677,
+  "transformations": "Selected lines intersecting the local bounding box; coordinates rounded to five decimals; etymology and person data omitted; street labels derived from selected line midpoints."
+}

@@ -5,25 +5,30 @@
     52.4581966,
     13.413901500000001
   ],
-  "radius_m": 2000,
+  "radius_m": 3000,
   "minimum_reviews": 25,
   "created_at": "2026-10-19T18:55:20.731Z",
-  "generated_at": "2026-10-19T19:38:37.444371+00:00",
-  "mean_rating": 4.5169985036528475,
+  "target_places": 550,
+  "collection_mode": "expand_existing_inventory",
+  "source_radius_m": 2000,
+  "method": "Previously discovered Google Maps results reused without duplicate searches; detail candidates reclassified within 3 km, stopping after at least 550 verified food venues with 25+ known reviews. Source searches were centred on the original 2 km area; this is not exhaustive coverage.",
+  "generated_at": "2026-10-19T20:13:44.287890+00:00",
+  "mean_rating": 4.489957391797591,
   "campaign_jobs": {
     "done": 144
   },
   "detail_jobs": {
-    "done": 211,
-    "skipped": 73
+    "done": 689,
+    "pending": 68,
+    "skipped": 189
   },
   "data_paused": false,
   "searches_without_confirmed_end": 96,
-  "inside_discoveries": 284,
-  "shown_candidates": 186,
-  "checked_details": 186,
-  "excluded_non_food": 25,
+  "inside_discoveries": 946,
+  "shown_candidates": 668,
+  "checked_details": 600,
+  "verified_eligible_places": 558,
+  "excluded_non_food": 89,
   "coverage_complete": false,
-  "method": "One-kilometre grid, six food keywords; ranked Google Maps lists, at most 20 scrolls. No universal completeness claim.",
   "bayesian_method": "Rating shrunk towards the local review-weighted mean with 100 prior reviews; no removal-count penalty."
 }

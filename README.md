@@ -397,7 +397,7 @@ For geographic collection, see the [Munich discovery pilot](docs/munich-discover
 
 The [Munich city campaign](docs/munich-city-campaign.md) coordinates a persisted geographic search plan, adaptive subdivision, and the detail queue, with live status and restart instructions.
 
-For the **2 km around Gottlieb-Dunkel-Straße, Berlin** map, see [Neighborhood maps](docs/neighborhood-map.md). The [portable site and saved dataset](web/neighborhood-map) use a separate bounded campaign and do not require the Munich inventory.
+For the **3 km around Gottlieb-Dunkel-Straße, Berlin** map with over 500 verified venues, see [Neighborhood maps](docs/neighborhood-map.md). The [portable site and saved dataset](web/neighborhood-map) include real local streets, mobile filter/detail dialogs, marker clusters and Base/Bayes scores. They reuse the separate Berlin inventory and do not require the Munich database.
 
 ### Command Line Options
 

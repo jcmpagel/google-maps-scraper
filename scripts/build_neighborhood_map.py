@@ -9,10 +9,12 @@ import re
 import shutil
 import sqlite3
 import tempfile
+import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
 
 FOOD = re.compile(r'restaurant|caf[eé]|coffee|kaffee|bakery|bäck|baeck|bistro|imbiss|snack|kebab|kebap|döner|doener|pizza|pizzer|steakhaus|steakhouse|patisser|kneipe|frühstück|fruehstueck|sushi|burger|gastst|gastr|grill|diner|fast.food|sandwich|brunch|kantine|konditor|dessert|ice.cream|eisdiele|eiscaf|take.?away|liefer|biergarten|brauhaus|\bpub\b|\bbar\b', re.I)
+NON_VENUE_PRIMARY = re.compile(r'bedarf\b|großhändler|grosshändler|hersteller|supermarkt|bioladen|discounter|tankstelle|^hotel$|^nachtclub$|^diskothek$', re.I)
 
 
 def write_snapshot(path, content):
@@ -62,7 +64,7 @@ def build(database, region_file, output, template=None):
             continue
         category = entry.get('category', '') if entry else ''
         categories = entry.get('categories', []) if entry else []
-        if entry and (category or categories) and not FOOD.search(' '.join([category, *categories])):
+        if entry and (NON_VENUE_PRIMARY.search(category) or ((category or categories) and not FOOD.search(' '.join([category, *categories])))):
             excluded_category += 1
             continue
         verified = entry is not None and candidate['detail_state'] == 'done'
@@ -89,6 +91,8 @@ def build(database, region_file, output, template=None):
     mean = sum(r['rating'] * r['review_count'] for r in rated) / sum(r['review_count'] for r in rated) if rated else None
     for row in rows:
         row['bayesian'] = round((row['rating'] * row['review_count'] + 100 * mean) / (row['review_count'] + 100), 4) if row in rated else None
+        row['base_score'] = row['bayesian']
+        row['positive_share'] = ((row['histogram'].get('4', 0) + row['histogram'].get('5', 0)) / sum(row['histogram'].values())) if row['histogram'] and sum(row['histogram'].values()) else None
     status = {key: value for key, value in connection.execute('SELECT status,count(*) FROM campaign_jobs GROUP BY status')}
     unfinished_lists = connection.execute('SELECT count(*) FROM searches WHERE end_of_list=0').fetchone()[0]
     details = {key: value for key, value in connection.execute("SELECT state,count(*) FROM details JOIN places ON id=place_id WHERE scope='inside' GROUP BY state")}
@@ -98,28 +102,45 @@ def build(database, region_file, output, template=None):
                 'searches_without_confirmed_end': unfinished_lists,
                 'inside_discoveries': len(candidates), 'shown_candidates': len(rows),
                 'checked_details': sum(r['detail_checked'] for r in rows),
+                'verified_eligible_places': sum(r['detail_checked'] and r['review_count'] is not None and r['review_count'] >= region['minimum_reviews'] for r in rows),
                 'excluded_non_food': excluded_category, 'coverage_complete': False,
-                'method': 'One-kilometre grid, six food keywords; ranked Google Maps lists, at most 20 scrolls. No universal completeness claim.',
+                'method': region.get('method', 'One-kilometre grid, six food keywords; ranked Google Maps lists, at most 20 scrolls. No universal completeness claim.'),
                 'bayesian_method': 'Rating shrunk towards the local review-weighted mean with 100 prior reviews; no removal-count penalty.'}
     connection.close()
     output = Path(output)
     output.mkdir(parents=True, exist_ok=True)
     if template:
         shutil.copytree(template, output, dirs_exist_ok=True,
-                        ignore=shutil.ignore_patterns('data.js', 'data.json', 'coverage.json', 'restaurants.csv'))
+                        ignore=shutil.ignore_patterns('data.js', 'data.json', 'coverage.json', 'restaurants.csv', 'restaurants.kml'))
     dataset = {'meta': manifest, 'rows': sorted(rows, key=lambda r: r['title'].casefold())}
     encoded = json.dumps(dataset, ensure_ascii=False, allow_nan=False)
     write_snapshot(output / 'data.json', encoded + '\n')
     write_snapshot(output / 'data.js', 'window.RESTAURANT_DATA = ' + encoded.replace('<', '\\u003c') + ';\n')
     write_snapshot(output / 'coverage.json', json.dumps(manifest, ensure_ascii=False, indent=2) + '\n')
-    columns = ['id', 'title', 'category', 'address', 'lat', 'lon', 'distance_m', 'rating', 'bayesian', 'review_count', 'review_count_available', 'detail_checked', 'removal_status', 'removed_min', 'removed_max', 'notice_conflict', 'notice', 'link', 'fetched_at']
+    columns = ['id', 'title', 'category', 'address', 'lat', 'lon', 'distance_m', 'rating', 'base_score', 'bayesian', 'positive_share', 'review_count', 'review_count_available', 'detail_checked', 'removal_status', 'removed_min', 'removed_max', 'notice_conflict', 'notice', 'link', 'fetched_at']
     buffer = io.StringIO(newline='')
-    writer = csv.DictWriter(buffer, fieldnames=columns, extrasaction='ignore')
+    writer = csv.DictWriter(buffer, fieldnames=columns, extrasaction='ignore', lineterminator='\n', quoting=csv.QUOTE_ALL)
     writer.writeheader()
     # CSV may be opened in a spreadsheet; venue-controlled text is never a formula.
     writer.writerows({key: ("'" + value if isinstance(value, str) and value.startswith(('=', '+', '-', '@', '\t', '\r')) else value)
                      for key, value in row.items()} for row in dataset['rows'])
     write_snapshot(output / 'restaurants.csv', '\ufeff' + buffer.getvalue())
+    # A standard KML can also be imported into Google My Maps or Google Earth.
+    namespace = 'http://www.opengis.net/kml/2.2'
+    ET.register_namespace('', namespace)
+    element = lambda name: '{' + namespace + '}' + name
+    document = ET.Element(element('kml'))
+    folder = ET.SubElement(document, element('Document'))
+    ET.SubElement(folder, element('name')).text = region['title']
+    for row in dataset['rows']:
+        if not row['detail_checked'] or row['review_count'] is None or row['review_count'] < region['minimum_reviews']:
+            continue
+        placemark = ET.SubElement(folder, element('Placemark'))
+        ET.SubElement(placemark, element('name')).text = row['title']
+        ET.SubElement(placemark, element('description')).text = f"{row['category']}\n{row['address']}\nBase-Score (Bayes): {row['base_score']}\nGoogle: {row['rating']} / 5, {row['review_count']} Bewertungen\n{row['notice'] or 'Kein Löschhinweis erfasst; Zahl unbekannt.'}\n{row['link']}"
+        point = ET.SubElement(placemark, element('Point'))
+        ET.SubElement(point, element('coordinates')).text = f"{row['lon']},{row['lat']},0"
+    write_snapshot(output / 'restaurants.kml', ET.tostring(document, encoding='unicode', xml_declaration=True))
     print(json.dumps(manifest, ensure_ascii=False))
     return dataset
 
