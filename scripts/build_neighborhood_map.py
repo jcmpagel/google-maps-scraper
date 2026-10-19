@@ -12,7 +12,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-FOOD = re.compile(r'restaurant|caf[eé]|coffee|kaffee|bakery|bäck|baeck|bistro|imbiss|snack|kebab|kebap|döner|doener|pizza|sushi|burger|gastst|gastr|grill|diner|fast.food|sandwich|brunch|kantine|konditor|dessert|ice.cream|eisdiele|eiscaf|take.?away|liefer|biergarten|brauhaus|\bpub\b|\bbar\b', re.I)
+FOOD = re.compile(r'restaurant|caf[eé]|coffee|kaffee|bakery|bäck|baeck|bistro|imbiss|snack|kebab|kebap|döner|doener|pizza|pizzer|steakhaus|steakhouse|patisser|kneipe|frühstück|fruehstueck|sushi|burger|gastst|gastr|grill|diner|fast.food|sandwich|brunch|kantine|konditor|dessert|ice.cream|eisdiele|eiscaf|take.?away|liefer|biergarten|brauhaus|\bpub\b|\bbar\b', re.I)
 
 
 def write_snapshot(path, content):
@@ -90,10 +90,12 @@ def build(database, region_file, output, template=None):
     for row in rows:
         row['bayesian'] = round((row['rating'] * row['review_count'] + 100 * mean) / (row['review_count'] + 100), 4) if row in rated else None
     status = {key: value for key, value in connection.execute('SELECT status,count(*) FROM campaign_jobs GROUP BY status')}
+    unfinished_lists = connection.execute('SELECT count(*) FROM searches WHERE end_of_list=0').fetchone()[0]
     details = {key: value for key, value in connection.execute("SELECT state,count(*) FROM details JOIN places ON id=place_id WHERE scope='inside' GROUP BY state")}
     network = dict(connection.execute('SELECT * FROM network_gate WHERE id=1').fetchone())
     manifest = {**region, 'generated_at': datetime.now(timezone.utc).isoformat(), 'mean_rating': mean,
                 'campaign_jobs': status, 'detail_jobs': details, 'data_paused': bool(network['halted']),
+                'searches_without_confirmed_end': unfinished_lists,
                 'inside_discoveries': len(candidates), 'shown_candidates': len(rows),
                 'checked_details': sum(r['detail_checked'] for r in rows),
                 'excluded_non_food': excluded_category, 'coverage_complete': False,

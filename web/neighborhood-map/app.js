@@ -27,7 +27,7 @@
   $('searchCount').textContent = `${finished} / ${finished + unfinished}`;
   const date = new Date(meta.generated_at).toLocaleString('de-DE', { timeZone: 'Europe/Berlin', dateStyle: 'medium', timeStyle: 'short' });
   $('captureDate').textContent = `Stand: ${date} Uhr (Berlin)`;
-  $('coverage').textContent = `${meta.shown_candidates} passende Kartenkandidaten im 2-km-Umkreis, ${meta.checked_details} mit abgefragten Details. ${finished} Suchläufe abgeschlossen${unfinished ? `, ${unfinished} noch offen oder nicht erfolgreich` : ''}. ${meta.data_paused ? 'Die Erfassung ist wegen einer Zugriffsbegrenzung pausiert. ' : ''}Stand: ${date} Uhr. Die Suche kann weitere Betriebe übersehen; dies ist keine vollständige Bezirksliste.`;
+  $('coverage').textContent = `${meta.shown_candidates} passende Kartenkandidaten im 2-km-Umkreis, ${meta.checked_details} mit abgefragten Details. ${finished} Suchläufe abgeschlossen${unfinished ? `, ${unfinished} noch offen oder nicht erfolgreich` : ''}. ${meta.searches_without_confirmed_end ? `Bei ${meta.searches_without_confirmed_end} Suchlisten wurde das Listenende nicht bestätigt. ` : ''}${meta.data_paused ? 'Die Erfassung ist wegen einer Zugriffsbegrenzung pausiert. ' : ''}Stand: ${date} Uhr. Die Suche kann weitere Betriebe übersehen; dies ist keine vollständige Bezirksliste.`;
   let map, radiusLayer, markers = [], selected = null, tileErrors = 0;
   if (window.L) {
     map = L.map('map', { preferCanvas: true, scrollWheelZoom: false }).setView(meta.center, 14);

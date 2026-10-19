@@ -53,6 +53,15 @@ class NeighborhoodMapTests(unittest.TestCase):
         self.assertIsNone(result['meta']['mean_rating'])
         self.assertEqual(distance_m(52.4581966, 13.4139015, [52.4581966, 13.4139015]), 0)
 
+    def test_food_categories_without_restaurant_suffix_are_not_lost(self):
+        categories = ['Pizzeria', 'Steakhaus', 'Patisserie', 'Kneipe', 'Frühstückslokal']
+        for category in categories:
+            self.seed(category, category=category)
+        self.seed('manufacturer', category='Hersteller')
+        self.seed('supermarket', category='Supermarkt')
+        result = build(self.root / 'data.sqlite', self.region, self.root / 'map')
+        self.assertEqual({row['id'] for row in result['rows']}, set(categories))
+
     def test_exports_keep_unknown_and_unbounded_removals_distinct(self):
         self.seed('absent')
         self.seed('unsupported', notice='unrecognized')

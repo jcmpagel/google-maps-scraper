@@ -1,0 +1,29 @@
+{
+  "title": "Tempelhofer Restaurant Signal",
+  "subtitle": "Rund um die Gottlieb-Dunkel-Straße",
+  "center": [
+    52.4581966,
+    13.413901500000001
+  ],
+  "radius_m": 2000,
+  "minimum_reviews": 25,
+  "created_at": "2026-10-19T18:55:20.731Z",
+  "generated_at": "2026-10-19T19:38:37.444371+00:00",
+  "mean_rating": 4.5169985036528475,
+  "campaign_jobs": {
+    "done": 144
+  },
+  "detail_jobs": {
+    "done": 211,
+    "skipped": 73
+  },
+  "data_paused": false,
+  "searches_without_confirmed_end": 96,
+  "inside_discoveries": 284,
+  "shown_candidates": 186,
+  "checked_details": 186,
+  "excluded_non_food": 25,
+  "coverage_complete": false,
+  "method": "One-kilometre grid, six food keywords; ranked Google Maps lists, at most 20 scrolls. No universal completeness claim.",
+  "bayesian_method": "Rating shrunk towards the local review-weighted mean with 100 prior reviews; no removal-count penalty."
+}

@@ -1,6 +1,6 @@
 # Small-area restaurant maps
 
-The birthday-map request targets **Gottlieb-Dunkel-Straße, Berlin**, confirmed by the user, with a **2,000-metre radius**. Google Maps resolved the named street to latitude 52.4581966, longitude 13.4139015. This is a street midpoint, not a private house address or a district boundary.
+The birthday-map request targets **Gottlieb-Dunkel-Straße, Berlin**, confirmed by the user, with a **2,000-metre radius**. The named-street Google Maps result supplied a map camera centre at latitude 52.4581966, longitude 13.4139015. We use that as an approximate street midpoint, not a private house address or a district boundary.
 
 The Berlin campaign uses a separate database and a spherical radius polygon. Its `neighborhood` profile seeds a bounded one-kilometre grid and six food queries: Restaurant, Café, Imbiss, Döner, Pizzeria and Bäckerei. The initial pass contains 144 query/cell jobs. Unlike the whole-city profile it does not automatically grow an exponential subdivision tree. Capped lists remain flagged as uncertain; further refinement can be designed from the measured union. This bounded pass does not establish that every local restaurant was found.
 
@@ -36,6 +36,10 @@ Outputs are `index.html`, local UI/vendor assets, `data.js`, `data.json`, `resta
 
 In the compact map exports, absent/unsupported/conflicting removal counts are `null` (blank in CSV). For a recognized open-ended range such as “over 250”, the lower bound is 251 and the upper bound is `null`. Interpret bounds together with `removal_status` and `notice_conflict`. The original scraper entries keep their existing zero sentinel for compatibility.
 
+## Saved map snapshot
+
+The published `web/neighborhood-map` folder includes the frozen Berlin `data.js`, `data.json`, `restaurants.csv` and `coverage.json` alongside its UI assets. Download the repository and open that folder's `index.html`, or upload the entire folder to a new static site. No live scraper, database, build or JavaScript CDN is needed to use the saved map. Read `coverage.json` for its exact capture time, finished/pending jobs and availability counts. Raw detail responses and the resumable SQLite queue remain in the workspace's separate campaign directory; they are not part of the compact public snapshot.
+
 ## Validation
 
 ```bash
@@ -43,6 +47,7 @@ python3 -m unittest discover -s scripts -p 'test_*.py'
 node --test scripts/test_detail_worker.cjs scripts/test_place_filters.cjs
 node --check web/neighborhood-map/app.js
 source /workspace/.setup/google-maps-scraper/activate.sh
+node --test scripts/test_maps_consent.cjs
 node scripts/smoke_neighborhood_map.cjs gmaps-output/berlin-tempelhof/map
 ```
 

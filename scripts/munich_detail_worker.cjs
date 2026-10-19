@@ -5,6 +5,13 @@ const { randomUUID } = require('node:crypto');
 const { detailExclusion } = require('./place_filters.cjs');
 const { rejectCookies } = require('./maps_consent.cjs');
 
+function detailPayload() {
+  const state = window.APP_INITIALIZATION_STATE?.[3];
+  if (!state) return null;
+  for (const value of Object.values(state)) if (Array.isArray(value)) for (const index of [6, 5]) if (typeof value[index] === 'string' && value[index].startsWith(")]}'")) return value[index];
+  return null;
+}
+
 function entryIdentity(entry) {
   const fid = /^0x[0-9a-f]+:0x([0-9a-f]+)$/i.exec(entry.data_id || '');
   if (fid) return `cid:${BigInt('0x' + fid[1]).toString()}`;
@@ -127,21 +134,18 @@ async function main() {
             const url = new URL(job.link); url.searchParams.set('hl', language); url.searchParams.set('gl', 'de');
             report.localeRequests++; save();
             await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45000 });
-            await rejectCookies(page, page.waitForFunction(() => !!window.APP_INITIALIZATION_STATE, { timeout: 25000 }));
-            await page.waitForFunction(() => !!window.APP_INITIALIZATION_STATE, { timeout: 15000 });
+            await rejectCookies(page, page.waitForFunction(detailPayload, null, { timeout: 25000 }));
+            // The initialization object may precede both consent and place data.
+            // Continue below on timeout so access challenges are still detected.
+            await page.waitForFunction(detailPayload, null, { timeout: 15000 }).catch(() => {});
             await page.waitForTimeout(3000);
             const body = await page.locator('body').innerText();
             if (blocked || /unusual traffic|ungewöhnlichen Datenverkehr|captcha/i.test(body)) {
               if (!fs.existsSync(network.haltFile)) network.halt('Access block or challenge');
               throw new Error('Access block or challenge; stopping');
             }
-            const raw = await page.evaluate(() => {
-              const state = window.APP_INITIALIZATION_STATE?.[3];
-              if (!state) return null;
-              for (const value of Object.values(state)) if (Array.isArray(value)) for (const index of [6, 5]) if (typeof value[index] === 'string' && value[index].startsWith(")]}'")) return value[index];
-              return null;
-            });
-            if (!raw || errors.length) throw new Error('Missing payload or incomplete transport: ' + errors.join('; '));
+            const raw = await page.evaluate(detailPayload);
+            if (!raw || errors.length) throw new Error('Missing payload or incomplete transport: ' + errors.join('; ') + (!raw ? ' ' + page.url() + ' ' + body.slice(0, 1200) : ''));
             const payload = JSON.parse(raw.replace(/^\)\]\}'\s*/, ''));
             const prefix = `${job.place_id.replace(/[^a-zA-Z0-9_-]/g, '_')}-${job.token}-${language}`;
             const rawFile = path.join(output, prefix + '-raw.json');
@@ -175,5 +179,5 @@ async function main() {
   }
 }
 
-module.exports = { entryIdentity, mergeObservations, needsEnglish, pace, networkControl };
+module.exports = { detailPayload, entryIdentity, mergeObservations, needsEnglish, pace, networkControl };
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });

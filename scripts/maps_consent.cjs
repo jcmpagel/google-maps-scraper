@@ -4,7 +4,7 @@ async function rejectCookies(page, ready) {
   const result = await Promise.any([
     reject.waitFor({ state: 'visible', timeout: 25000 }).then(() => 'consent'),
     ready.then(() => 'ready'),
-  ]);
+  ]).catch(() => 'timeout'); // Callers inspect the page for blocks/missing data.
   if (result === 'consent') await reject.click();
 }
 module.exports = { rejectCookies };
