@@ -52,6 +52,19 @@ class CampaignTests(unittest.TestCase):
         self.assertEqual(len(set(identifiers)), 16)
         self.assertEqual(self.campaign.db.execute("SELECT count(*) FROM campaign_jobs WHERE status='running'").fetchone()[0], 16)
 
+    def test_neighborhood_profile_marks_capped_seed_as_uncertain_without_exploding(self):
+        campaign = Campaign(self.root / 'neighborhood.sqlite', self.root / 'neighborhood', self.boundary, 'neighborhood')
+        try:
+            self.assertEqual(campaign.config['max_depth'], 0)
+            self.assertEqual(len(campaign.config['keywords']), 6)
+            row = campaign.db.execute('SELECT id,task_json FROM campaign_jobs LIMIT 1').fetchone()
+            before = campaign.db.execute('SELECT count(*) FROM campaign_jobs').fetchone()[0]
+            campaign.complete(row['id'], json.loads(row['task_json']), 120, True)
+            self.assertEqual(campaign.db.execute('SELECT count(*) FROM campaign_jobs').fetchone()[0], before)
+            self.assertEqual(campaign.status()['saturated_at_minimum'], 1)
+        finally:
+            campaign.db.close()
+
     def test_saturated_parent_adds_four_children_only_once(self):
         row = self.campaign.db.execute('SELECT id,task_json FROM campaign_jobs LIMIT 1').fetchone()
         task = json.loads(row['task_json'])

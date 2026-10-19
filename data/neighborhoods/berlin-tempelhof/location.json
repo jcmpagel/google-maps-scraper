@@ -1,0 +1,27 @@
+{
+  "query": "Gottlieb-Dunkel-Straße Berlin",
+  "url": "https://www.google.com/maps/search/Gottlieb-Dunkel-Stra%C3%9Fe%20Berlin?hl=de&gl=de",
+  "heading": "Gottlieb-Dunkel-Straße",
+  "camera": {
+    "Hg": [
+      [
+        2431.1562350655504,
+        13.413901500000001,
+        52.4581966
+      ],
+      [
+        0,
+        0,
+        0
+      ],
+      [
+        1024,
+        768
+      ],
+      13.1
+    ],
+    "Pa": {}
+  },
+  "failures": [],
+  "captured_at": "2026-10-19T18:55:20.731Z"
+}

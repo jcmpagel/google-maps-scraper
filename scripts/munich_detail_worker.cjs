@@ -3,6 +3,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
 const { detailExclusion } = require('./place_filters.cjs');
+const { rejectCookies } = require('./maps_consent.cjs');
 
 function entryIdentity(entry) {
   const fid = /^0x[0-9a-f]+:0x([0-9a-f]+)$/i.exec(entry.data_id || '');
@@ -50,7 +51,7 @@ function mergeObservations(observations, expected) {
   const merged = { ...observations[0].entry };
   const notices = observations.filter(o => o.entry.removed_reviews_status === 'parsed');
   const conflict = new Set(notices.map(o => `${o.entry.removed_reviews_min}/${o.entry.removed_reviews_max}`)).size > 1;
-  const recognized = notices[0];
+  const recognized = notices[0] || observations.find(o => o.entry.removed_reviews_status === 'unrecognized');
   if (recognized) for (const key of ['removed_reviews_min', 'removed_reviews_max', 'removed_reviews_status', 'removed_reviews_notice']) merged[key] = recognized.entry[key];
   if (conflict) { merged.removed_reviews_min = 0; merged.removed_reviews_max = 0; merged.removed_reviews_status = 'unrecognized'; }
   for (const [available, values] of [['review_count_available', ['review_count', 'review_rating']], ['reviews_per_rating_available', ['reviews_per_rating']]]) {
@@ -126,8 +127,7 @@ async function main() {
             const url = new URL(job.link); url.searchParams.set('hl', language); url.searchParams.set('gl', 'de');
             report.localeRequests++; save();
             await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 45000 });
-            const reject = page.getByRole('button', { name: /Reject all|Alle ablehnen/i });
-            if (await reject.count()) await reject.first().click();
+            await rejectCookies(page, page.waitForFunction(() => !!window.APP_INITIALIZATION_STATE, { timeout: 25000 }));
             await page.waitForFunction(() => !!window.APP_INITIALIZATION_STATE, { timeout: 15000 });
             await page.waitForTimeout(3000);
             const body = await page.locator('body').innerText();

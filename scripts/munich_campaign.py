@@ -66,7 +66,7 @@ def geometry_bounds(geometry):
     return [min(p[0] for p in points), min(p[1] for p in points), max(p[0] for p in points), max(p[1] for p in points)]
 
 
-def cell_tasks(geometry):
+def cell_tasks(geometry, keywords=None):
     west, south, east, north = geometry_bounds(geometry)
     lat_step = 1 / 111.32
     lon_step = 1 / (111.32 * math.cos(math.radians((south + north) / 2)))
@@ -82,7 +82,7 @@ def cell_tasks(geometry):
                    west + (column + 1) * lon_step, south + (row + 1) * lat_step]
             expanded = [box[0] - lon_step / 4, box[1] - lat_step / 4, box[2] + lon_step / 4, box[3] + lat_step / 4]
             if intersects(geometry, expanded):
-                for keyword in KEYWORDS:
+                for keyword in (keywords or KEYWORDS):
                     tasks.append({"name": f"munich-{row}-{column}", "lat": (box[1] + box[3]) / 2,
                                   "lon": (box[0] + box[2]) / 2, "zoom": 16, "keyword": keyword,
                                   "box": box, "depth": 0})
@@ -100,13 +100,14 @@ def children(task):
 
 
 class Campaign:
-    def __init__(self, database, output, boundary):
+    def __init__(self, database, output, boundary, profile='city'):
         self.store = Store(database)
         self.db = self.store.db
         self.database = str(Path(database).resolve())
         self.output = Path(output).resolve()
         self.output.mkdir(parents=True, exist_ok=True)
         self.boundary = str(Path(boundary).resolve())
+        self.profile = profile
         raw = Path(boundary).read_bytes()
         document = json.loads(raw)
         geometry = document.get("geometry", document)
@@ -123,6 +124,9 @@ class Campaign:
         config = {"version": 1, "boundary_sha256": hashlib.sha256(raw).hexdigest(),
                   "boundary_status": "preliminary", "keywords": KEYWORDS, "base_cell_km": 1,
                   "max_depth": 2, "min_cell_km": 0.25, "scroll_budget": 20}
+        if profile == 'neighborhood':
+            config.update(keywords=['Restaurant', 'Café', 'Imbiss', 'Döner', 'Pizzeria', 'Bäckerei'],
+                          max_depth=0, min_cell_km=1, boundary_status='user_requested_radius')
         self.config = config
         existing = self.db.execute("SELECT config_json FROM campaign_config WHERE id=1").fetchone()
         previous = json.loads(existing[0]) if existing else None
@@ -135,7 +139,7 @@ class Campaign:
             self.db.execute("INSERT OR IGNORE INTO campaign_config VALUES(1,?)", (json.dumps(config, sort_keys=True),))
             self.db.execute("UPDATE campaign_config SET config_json=? WHERE id=1", (json.dumps(config, sort_keys=True),))
             if not existing:
-                for task in cell_tasks(geometry):
+                for task in cell_tasks(geometry, config['keywords']):
                     self.enqueue(task)
             self.db.execute("COMMIT")
         except Exception:
@@ -162,7 +166,7 @@ class Campaign:
 
     def status(self):
         return {"campaign": dict(self.db.execute("SELECT status,count(*) FROM campaign_jobs GROUP BY status").fetchall()),
-                "saturated_at_minimum": self.db.execute("SELECT count(*) FROM campaign_jobs WHERE status='done' AND saturated=1 AND json_extract(task_json,'$.depth')=2").fetchone()[0],
+                "saturated_at_minimum": self.db.execute("SELECT count(*) FROM campaign_jobs WHERE status='done' AND saturated=1 AND json_extract(task_json,'$.depth')=?", (self.config['max_depth'],)).fetchone()[0],
                 "inventory": self.store.stats(), "config": self.config,
                 "network": dict(self.db.execute('SELECT * FROM network_gate WHERE id=1').fetchone())}
 
@@ -180,6 +184,7 @@ class Campaign:
 
     def parallel_lane(self, lane, stopping, parser, worker_limit=None):
         scripts = Path(__file__).resolve().parent
+        captured_searches = 0
         while not stopping.is_set():
             if worker_limit is not None and lane >= worker_limit['workers']:
                 stopping.wait(3)
@@ -219,6 +224,18 @@ class Campaign:
                     continue
                 record = next(r for r in json.loads((directory / 'discovery.json').read_text())['searches'] if r['status'] == 'completed')
                 self.complete(job['id'], task, len(record['places']), record.get('endOfList', False))
+                captured_searches += 1
+                if self.profile == 'neighborhood' and captured_searches % 4 == 0 and not stopping.is_set():
+                    # Small-area maps become useful before the entire search pass ends.
+                    # The lane's browser lock is released; detail leases remain global.
+                    west, south, east, north = self.bounds
+                    directory = self.output / 'details' / f'lane-{lane}'
+                    directory.mkdir(parents=True, exist_ok=True)
+                    with (directory / 'worker.log').open('a') as log:
+                        result = subprocess.run(['node', str(scripts / 'munich_detail_worker.cjs'), self.database, str(directory), str(Path(parser).resolve()), '--limit', '5', '--bbox', f'{south},{west},{north},{east}', '--lane', str(lane)], stdout=log, stderr=log)
+                    if result.returncode and self.db.execute('SELECT halted FROM network_gate WHERE id=1').fetchone()[0]:
+                        stopping.set()
+                        return
                 stopping.wait(15)
                 continue
             remaining = self.db.execute("SELECT count(*) FROM campaign_jobs WHERE status IN ('pending','running')").fetchone()[0]
@@ -268,7 +285,7 @@ class Campaign:
         signal.signal(signal.SIGINT, stop)
 
         def lane_work(lane):
-            campaign = Campaign(self.database, self.output, self.boundary)
+            campaign = Campaign(self.database, self.output, self.boundary, self.profile)
             try:
                 campaign.parallel_lane(lane, stopping, parser, worker_limit)
             except Exception:
@@ -430,8 +447,9 @@ def main():
     parser.add_argument('--parser', default='bin/parse-place')
     parser.add_argument('--workers', type=int, default=1)
     parser.add_argument('--initial-workers', type=int)
+    parser.add_argument('--profile', choices=['city', 'neighborhood'], default='city')
     args = parser.parse_args()
-    campaign = Campaign(args.database, args.output, args.boundary)
+    campaign = Campaign(args.database, args.output, args.boundary, args.profile)
     try:
         if args.run:
             if args.workers == 1:

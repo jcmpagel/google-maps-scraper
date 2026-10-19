@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Restaurants, Cafés und Imbisse rund um die Gottlieb-Dunkel-Straße in Tempelhof — mit Bewertungen und transparenten Löschhinweisen.">
+  <title>Tempelhofer Restaurant Signal</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%230f8f68'/%3E%3Cpath d='M11 25h18v4H11zm2-13h14l2 9H11z' fill='white'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="vendor/leaflet.css"><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app-shell">
+  <aside class="side-panel">
+    <header class="brand-block"><p class="eyebrow">Eine Karte für deinen Kiez</p><h1 id="title">Tempelhofer<br>Restaurant Signal</h1><p class="intro">Gutes Essen um die Ecke.<br>Rund um die Gottlieb-Dunkel-Straße.</p><span class="live-pill">2 km Umkreis · Tempelhof / Neukölln</span><a class="mobile-map-link" href="#map">Zur Karte ↓</a></header>
+    <section class="control-section" aria-label="Karte filtern">
+      <label class="field-label" for="search">Suche</label><input id="search" type="search" placeholder="Name, Straße oder Küche …" autocomplete="off">
+      <div class="split-controls"><label for="category">Kategorie<select id="category"><option value="">Alle Kategorien</option></select></label><label for="minimum">Bewertungen<select id="minimum"><option value="25">Ab 25</option><option value="50">Ab 50</option><option value="100">Ab 100</option><option value="300">Ab 300</option></select></label></div>
+      <label class="field-label" for="sort">Sortierung</label><select id="sort"><option value="bayesian">Gewichtete Bewertung</option><option value="distance">Am nächsten</option><option value="rating">Google-Bewertung</option><option value="reviews">Meiste Bewertungen</option></select>
+      <label class="field-label" for="colour">Markerfarbe</label><select id="colour"><option value="rating">Bewertung</option><option value="notices">Löschhinweise</option></select>
+      <label class="check-label"><input id="checked" type="checkbox" checked> Nur Orte mit Detaildaten</label>
+      <label class="check-label"><input id="notices" type="checkbox"> Nur erkannte Löschhinweise</label>
+      <button id="reset" class="secondary-button" type="button">Filter zurücksetzen</button>
+    </section>
+    <section id="detail" class="detail-panel" aria-live="polite"><p class="eyebrow">Dein nächster Stopp</p><h2>Wo soll’s hingehen?</h2><p class="muted">Wähle einen Marker oder einen Ort in der Liste. Hier erscheinen Bewertung, Entfernung, Sterne-Verteilung und Löschhinweise.</p></section>
+    <footer class="side-footer"><p>Eine Momentaufnahme von Google Maps. Entfernungen sind Luftlinie ab dem Straßenmittelpunkt.</p><a href="restaurants.csv" download>CSV herunterladen</a> · <a href="data.json" download>JSON herunterladen</a><p id="captureDate"></p></footer>
+  </aside>
+  <main class="main-panel">
+    <section class="top-strip" aria-label="Datensatz im Überblick"><article class="summary-card"><span>Orte in der Ansicht</span><strong id="visibleCount">–</strong></article><article class="summary-card"><span>Mit Detaildaten</span><strong id="detailCount">–</strong></article><article class="summary-card"><span>Erkannte Löschhinweise</span><strong id="noticeCount">–</strong></article><article class="summary-card"><span>Suchläufe abgeschlossen</span><strong id="searchCount">–</strong></article></section>
+    <section class="map-section"><div class="map-toolbar"><div><p class="eyebrow">Deine Nachbarschaft</p><h2>Ein Kiez voller Möglichkeiten.</h2></div><button id="fit" class="secondary-button" type="button">Umkreis zeigen</button></div><div id="map" aria-label="Interaktive Restaurantkarte"></div><p id="mapFallback" class="map-fallback" hidden>Der Kartenhintergrund ist gerade nicht erreichbar. Alle Orte stehen weiterhin in der Liste mit Google-Maps-Link.</p><div id="legend" class="legend"></div></section>
+    <section class="rankings-section"><div class="rankings-header"><div><p class="eyebrow">Für die nächste Verabredung</p><h2>Entdecke deinen neuen Lieblingsort.</h2></div><span id="resultLabel" class="muted"></span></div><div class="table-wrap"><table><thead><tr><th scope="col">Ort</th><th scope="col">Bewertung</th><th scope="col">Bewertungen</th><th scope="col">Entfernung</th><th scope="col">Löschhinweis</th></tr></thead><tbody id="rows"></tbody></table></div><p id="empty" class="empty" hidden>Für diese Filter gibt es noch keine passenden Orte. Filter ändern oder „Nur Orte mit Detaildaten“ ausschalten.</p></section>
+    <section class="method-panel"><h2>Was die Zahlen sagen — und was offenbleibt.</h2><p id="coverage"></p><p><strong>Löschhinweise sind Spannen.</strong> Google bezieht sie auf im vergangenen Jahr entfernte Rezensionen nach Beschwerden wegen Diffamierung unter deutschem Recht. Sie sind keine Zahl aller jemals gelöschten Bewertungen und kein Nachweis, wer eine Entfernung veranlasst hat. „Kein Hinweis erfasst“ bedeutet nicht „keine Löschungen“.</p><p>Die gewichtete Bewertung berücksichtigt die Zahl der Bewertungen und den lokalen Durchschnitt mit 100 Vergleichsbewertungen. Löschhinweise fließen nicht als Strafpunkte ein. Dauerhaft geschlossene Orte und Orte mit bestätigt weniger als 25 Bewertungen sind ausgeblendet. Die angefragten Ergebnislisten sind begrenzt; eine vollständige Erfassung aller Betriebe ist nicht garantiert.</p></section>
+  </main>
+</div>
+<script src="vendor/leaflet.js"></script><script src="data.js"></script><script src="app.js"></script>
+</body></html>

@@ -30,6 +30,12 @@ test('default fallback avoids another locale for complete metrics and absent not
   assert.equal(needsEnglish({ ...complete, reviews_per_rating_available: false }, 'missing-data'), true);
   assert.equal(needsEnglish({ ...complete, removed_reviews_status: 'unrecognized' }, 'missing-data'), true);
 });
+test('unrecognized fallback notice is retained rather than labelled absent', () => {
+  const result = mergeObservations([{ language: 'de', entry: entry() },
+    { language: 'en', entry: entry({ removed_reviews_status: 'unrecognized', removed_reviews_notice: 'Unsupported removal wording' }) }], id);
+  assert.equal(result.removed_reviews_status, 'unrecognized');
+  assert.equal(result.removed_reviews_notice, 'Unsupported removal wording');
+});
 test('conflicting locale ranges remain unrecognized and retain both observations', () => {
   const result = mergeObservations([
     { language: 'de', entry: entry({ removed_reviews_status: 'parsed', removed_reviews_min: 2, removed_reviews_max: 5 }) },

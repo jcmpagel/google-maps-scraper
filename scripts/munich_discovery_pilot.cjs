@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { searchEvidence } = require('./place_filters.cjs');
+const { rejectCookies } = require('./maps_consent.cjs');
 const { chromium } = require(path.join(process.env.PLAYWRIGHT_DRIVER_PATH, 'package'));
 const output = process.argv[2];
 if (!output) throw new Error('Usage: node scripts/munich_discovery_pilot.cjs OUTPUT_DIRECTORY');
@@ -153,13 +154,12 @@ async function summarize() {
       try {
         const url = `https://www.google.com/maps/search/${encodeURIComponent(task.keyword)}/@${task.lat},${task.lon},${task.zoom}z?hl=de&gl=de`;
         await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 45000 });
-        const reject = page.getByRole('button', { name: /Reject all|Alle ablehnen/i });
-        if (await reject.count()) await reject.first().click();
         const feed = page.locator('div[role=feed]');
         let standalone = null;
-        try { await feed.waitFor({ timeout: 25000 }); }
+        try { await rejectCookies(page, feed.waitFor({ timeout: 25000 })); await feed.waitFor({ timeout: 25000 }); }
         catch (error) {
           const body = await page.locator('body').innerText();
+          record.failure_view = { url: page.url(), body: body.slice(0, 2500) };
           if (blocked || /unusual traffic|ungewöhnlichen Datenverkehr|captcha/i.test(body)) throw new Error('Access block or challenge; stopping');
           if (/Keine Ergebnisse|No results|keine Übereinstimmungen/i.test(body)) standalone = [];
           else if (page.url().includes('/maps/place/')) {

@@ -1,0 +1,11 @@
+{
+  "title": "Tempelhofer Restaurant Signal",
+  "subtitle": "Rund um die Gottlieb-Dunkel-Straße",
+  "center": [
+    52.4581966,
+    13.413901500000001
+  ],
+  "radius_m": 2000,
+  "minimum_reviews": 25,
+  "created_at": "2026-10-19T18:55:20.731Z"
+}

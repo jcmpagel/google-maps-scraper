@@ -1,5 +1,7 @@
 cache/
 vendor
+!web/neighborhood-map/vendor/
+!web/neighborhood-map/vendor/**
 bin
 webdata/
 examples/examples-api/map-outputs
